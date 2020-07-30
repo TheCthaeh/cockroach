@@ -421,7 +421,7 @@ anti-join-apply
  │                   ├── fd: ()-->(8)
  │                   └── (1,)
  └── filters
-      └── column1:9 = k:2 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(9), (9)==(2)]
+      └── column1:9 = k:2 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(2,9)]
 
 # Don't inline side-effecting expressions.
 norm
@@ -642,7 +642,7 @@ with &2 (cte)
  │                   │    ├── interesting orderings: (+7)
  │                   │    └── unfiltered-cols: (7,8)
  │                   └── filters
- │                        └── eq [type=bool, outer=(6,7), constraints=(/6: (/NULL - ]; /7: (/NULL - ]), fd=(6)==(7), (7)==(6)]
+ │                        └── eq [type=bool, outer=(6,7), constraints=(/6: (/NULL - ]; /7: (/NULL - ]), fd=(6)==(6,7)]
  │                             ├── variable: column2:6 [type=int]
  │                             └── variable: t.public.parent.p:7 [type=int]
  └── union

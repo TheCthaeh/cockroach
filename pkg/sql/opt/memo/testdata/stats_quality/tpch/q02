@@ -78,61 +78,61 @@ project
  └── limit
       ├── save-table-name: q2_limit_2
       ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) s_name:12(char!null) s_address:13(varchar!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null) n_name:26(char!null) min:57(float!null)
-      ├── internal-ordering: -16,+26,+12,+(1|19)
+      ├── internal-ordering: -16,+26,+12,+1
       ├── cardinality: [0 - 100]
       ├── stats: [rows=1, distinct(1)=1, null(1)=0, distinct(3)=1, null(3)=0, distinct(12)=1, null(12)=0, distinct(13)=1, null(13)=0, distinct(15)=1, null(15)=0, distinct(16)=1, null(16)=0, distinct(17)=1, null(17)=0, distinct(19)=0.999911987, null(19)=0, distinct(20)=0.99998212, null(20)=0, distinct(22)=1, null(22)=0, distinct(26)=1, null(26)=0, distinct(57)=1, null(57)=0]
       ├── key: (19,20)
-      ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (19)==(1), (20)-->(12,13,15-17,26), (22)==(57), (57)==(22)
-      ├── ordering: -16,+26,+12,+(1|19) [actual: -16,+26,+12,+1]
+      ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (20)-->(12,13,15-17,26), (22)==(22,57)
+      ├── ordering: -16,+26,+12,+1
       ├── sort
       │    ├── save-table-name: q2_sort_3
       │    ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) s_name:12(char!null) s_address:13(varchar!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null) n_name:26(char!null) min:57(float!null)
       │    ├── stats: [rows=1, distinct(1)=1, null(1)=0, distinct(3)=1, null(3)=0, distinct(12)=1, null(12)=0, distinct(13)=1, null(13)=0, distinct(15)=1, null(15)=0, distinct(16)=1, null(16)=0, distinct(17)=1, null(17)=0, distinct(19)=0.999911987, null(19)=0, distinct(20)=0.99998212, null(20)=0, distinct(22)=1, null(22)=0, distinct(26)=1, null(26)=0, distinct(57)=1, null(57)=0]
       │    ├── key: (19,20)
-      │    ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (19)==(1), (20)-->(12,13,15-17,26), (22)==(57), (57)==(22)
-      │    ├── ordering: -16,+26,+12,+(1|19) [actual: -16,+26,+12,+1]
+      │    ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (20)-->(12,13,15-17,26), (22)==(22,57)
+      │    ├── ordering: -16,+26,+12,+1
       │    ├── limit hint: 100.00
       │    └── select
       │         ├── save-table-name: q2_select_4
       │         ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) s_name:12(char!null) s_address:13(varchar!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null) n_name:26(char!null) min:57(float!null)
       │         ├── stats: [rows=1, distinct(1)=1, null(1)=0, distinct(3)=1, null(3)=0, distinct(12)=1, null(12)=0, distinct(13)=1, null(13)=0, distinct(15)=1, null(15)=0, distinct(16)=1, null(16)=0, distinct(17)=1, null(17)=0, distinct(19)=0.999911987, null(19)=0, distinct(20)=0.99998212, null(20)=0, distinct(22)=1, null(22)=0, distinct(26)=1, null(26)=0, distinct(57)=1, null(57)=0]
       │         ├── key: (19,20)
-      │         ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (19)==(1), (20)-->(12,13,15-17,26), (22)==(57), (57)==(22)
+      │         ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (20)-->(12,13,15-17,26), (22)==(22,57)
       │         ├── group-by
       │         │    ├── save-table-name: q2_group_by_5
       │         │    ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) s_name:12(char!null) s_address:13(varchar!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null) n_name:26(char!null) min:57(float!null)
       │         │    ├── grouping columns: ps_partkey:19(int!null) ps_suppkey:20(int!null)
       │         │    ├── stats: [rows=1476.95652, distinct(1)=1476.95652, null(1)=0, distinct(3)=1476.95652, null(3)=0, distinct(12)=1476.95652, null(12)=0, distinct(13)=1476.95652, null(13)=0, distinct(15)=1476.95652, null(15)=0, distinct(16)=1476.95652, null(16)=0, distinct(17)=1476.95652, null(17)=0, distinct(19)=1172.24444, null(19)=0, distinct(20)=1402.87938, null(20)=0, distinct(22)=1476.95652, null(22)=0, distinct(26)=1476.95652, null(26)=0, distinct(57)=1476.95652, null(57)=0, distinct(19,20)=1476.95652, null(19,20)=0]
       │         │    ├── key: (19,20)
-      │         │    ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (19)==(1), (20)-->(12,13,15-17,26)
+      │         │    ├── fd: (1)-->(3), (19,20)-->(1,3,12,13,15-17,22,26,57), (1)==(19), (20)-->(12,13,15-17,26)
       │         │    ├── inner-join (hash)
       │         │    │    ├── save-table-name: q2_inner_join_6
       │         │    │    ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) p_type:5(varchar!null) p_size:6(int!null) s_suppkey:11(int!null) s_name:12(char!null) s_address:13(varchar!null) s_nationkey:14(int!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null) n_nationkey:25(int!null) n_name:26(char!null) n_regionkey:27(int!null) r_regionkey:30(int!null) r_name:31(char!null) ps_partkey:34(int!null) ps_suppkey:35(int!null) ps_supplycost:37(float!null) s_suppkey:40(int!null) s_nationkey:43(int!null) n_nationkey:48(int!null) n_regionkey:50(int!null) r_regionkey:53(int!null) r_name:54(char!null)
       │         │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
       │         │    │    ├── stats: [rows=2818.04959, distinct(1)=1333.31636, null(1)=0, distinct(3)=5, null(3)=0, distinct(5)=149.999616, null(5)=0, distinct(6)=1, null(6)=0, distinct(11)=1402.87938, null(11)=0, distinct(12)=1403.43197, null(12)=0, distinct(13)=1403.51028, null(13)=0, distinct(14)=5, null(14)=0, distinct(15)=1403.51028, null(15)=0, distinct(16)=1403.25125, null(16)=0, distinct(17)=1402.99052, null(17)=0, distinct(19)=1172.24444, null(19)=0, distinct(20)=1402.87938, null(20)=0, distinct(22)=1472.76855, null(22)=0, distinct(25)=5, null(25)=0, distinct(26)=5, null(26)=0, distinct(27)=1, null(27)=0, distinct(30)=1, null(30)=0, distinct(31)=0.996222107, null(31)=0, distinct(34)=1333.31636, null(34)=0, distinct(35)=1444.36606, null(35)=0, distinct(37)=2769.15811, null(37)=0, distinct(40)=1444.36606, null(40)=0, distinct(43)=5, null(43)=0, distinct(48)=5, null(48)=0, distinct(50)=1, null(50)=0, distinct(53)=1, null(53)=0, distinct(54)=0.996222107, null(54)=0, distinct(19,20)=1476.95652, null(19,20)=0]
       │         │    │    ├── key: (20,34,40)
-      │         │    │    ├── fd: ()-->(6,31,54), (1)-->(3,5), (11)-->(12-17), (19,20)-->(22), (11)==(20), (20)==(11), (25)-->(26,27), (27)==(30), (30)==(27), (14)==(25), (25)==(14), (1)==(19,34), (19)==(1,34), (34,35)-->(37), (40)-->(43), (48)-->(50), (50)==(53), (53)==(50), (43)==(48), (48)==(43), (35)==(40), (40)==(35), (34)==(1,19)
+      │         │    │    ├── fd: ()-->(6,31,54), (1)-->(3,5), (11)-->(12-17), (19,20)-->(22), (11)==(11,20), (25)-->(26,27), (27)==(27,30), (14)==(14,25), (34,35)-->(37), (40)-->(43), (48)-->(50), (50)==(50,53), (43)==(43,48), (35)==(35,40), (1)==(1,19,34)
       │         │    │    ├── inner-join (lookup partsupp)
       │         │    │    │    ├── save-table-name: q2_lookup_join_7
       │         │    │    │    ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) p_type:5(varchar!null) p_size:6(int!null) s_suppkey:11(int!null) s_name:12(char!null) s_address:13(varchar!null) s_nationkey:14(int!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null) n_nationkey:25(int!null) n_name:26(char!null) n_regionkey:27(int!null) r_regionkey:30(int!null) r_name:31(char!null) ps_partkey:34(int!null) ps_suppkey:35(int!null) ps_supplycost:37(float!null)
       │         │    │    │    ├── key columns: [1] = [34]
       │         │    │    │    ├── stats: [rows=4452.37425, distinct(1)=1333.31636, null(1)=0, distinct(3)=5, null(3)=0, distinct(5)=150, null(5)=0, distinct(6)=1, null(6)=0, distinct(11)=3587.31881, null(11)=0, distinct(12)=3592.54448, null(12)=0, distinct(13)=3593.28589, null(13)=0, distinct(14)=25, null(14)=0, distinct(15)=3593.28589, null(15)=0, distinct(16)=3590.83442, null(16)=0, distinct(17)=3588.36899, null(17)=0, distinct(19)=1333.31636, null(19)=0, distinct(20)=3587.31881, null(20)=0, distinct(22)=4355.01344, null(22)=0, distinct(25)=25, null(25)=0, distinct(26)=25, null(26)=0, distinct(27)=1, null(27)=0, distinct(30)=1, null(30)=0, distinct(31)=1, null(31)=0, distinct(34)=4401.6666, null(34)=0, distinct(35)=3587.31881, null(35)=0, distinct(37)=4355.01344, null(37)=0]
       │         │    │    │    ├── key: (20,34,35)
-      │         │    │    │    ├── fd: ()-->(6,31), (1)-->(3,5), (25)-->(26,27), (11)-->(12-17), (19,20)-->(22), (34,35)-->(37), (19)==(1,34), (34)==(1,19), (11)==(20), (20)==(11), (14)==(25), (25)==(14), (27)==(30), (30)==(27), (1)==(19,34)
+      │         │    │    │    ├── fd: ()-->(6,31), (1)-->(3,5), (25)-->(26,27), (11)-->(12-17), (19,20)-->(22), (34,35)-->(37), (11)==(11,20), (14)==(14,25), (27)==(27,30), (1)==(1,19,34)
       │         │    │    │    ├── inner-join (hash)
       │         │    │    │    │    ├── save-table-name: q2_inner_join_8
       │         │    │    │    │    ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) p_type:5(varchar!null) p_size:6(int!null) s_suppkey:11(int!null) s_name:12(char!null) s_address:13(varchar!null) s_nationkey:14(int!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null) n_nationkey:25(int!null) n_name:26(char!null) n_regionkey:27(int!null) r_regionkey:30(int!null) r_name:31(char!null)
       │         │    │    │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
       │         │    │    │    │    ├── stats: [rows=1931.84139, distinct(1)=1333.31636, null(1)=0, distinct(3)=5, null(3)=0, distinct(5)=149.999617, null(5)=0, distinct(6)=1, null(6)=0, distinct(11)=1755.38174, null(11)=0, distinct(12)=1756.54107, null(12)=0, distinct(13)=1756.70545, null(13)=0, distinct(14)=5, null(14)=0, distinct(15)=1756.70545, null(15)=0, distinct(16)=1756.16183, null(16)=0, distinct(17)=1755.61483, null(17)=0, distinct(19)=1333.31636, null(19)=0, distinct(20)=1755.38174, null(20)=0, distinct(22)=1908.96352, null(22)=0, distinct(25)=5, null(25)=0, distinct(26)=5, null(26)=0, distinct(27)=1, null(27)=0, distinct(30)=1, null(30)=0, distinct(31)=0.996222107, null(31)=0, distinct(19,20)=1918.63711, null(19,20)=0]
       │         │    │    │    │    ├── key: (19,20)
-      │         │    │    │    │    ├── fd: ()-->(6,31), (1)-->(3,5), (11)-->(12-17), (19,20)-->(22), (11)==(20), (20)==(11), (25)-->(26,27), (27)==(30), (30)==(27), (14)==(25), (25)==(14), (1)==(19), (19)==(1)
+      │         │    │    │    │    ├── fd: ()-->(6,31), (1)-->(3,5), (11)-->(12-17), (19,20)-->(22), (11)==(11,20), (25)-->(26,27), (27)==(27,30), (14)==(14,25), (1)==(1,19)
       │         │    │    │    │    ├── inner-join (lookup partsupp)
       │         │    │    │    │    │    ├── save-table-name: q2_lookup_join_9
       │         │    │    │    │    │    ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) p_type:5(varchar!null) p_size:6(int!null) ps_partkey:19(int!null) ps_suppkey:20(int!null) ps_supplycost:22(float!null)
       │         │    │    │    │    │    ├── key columns: [1] = [19]
       │         │    │    │    │    │    ├── stats: [rows=5353.65044, distinct(1)=1333.31636, null(1)=0, distinct(3)=5, null(3)=0, distinct(5)=150, null(5)=0, distinct(6)=1, null(6)=0, distinct(19)=1333.31636, null(19)=0, distinct(20)=4137.30947, null(20)=0, distinct(22)=5213.40104, null(22)=0]
       │         │    │    │    │    │    ├── key: (19,20)
-      │         │    │    │    │    │    ├── fd: ()-->(6), (1)-->(3,5), (19,20)-->(22), (1)==(19), (19)==(1)
+      │         │    │    │    │    │    ├── fd: ()-->(6), (1)-->(3,5), (19,20)-->(22), (1)==(1,19)
       │         │    │    │    │    │    ├── select
       │         │    │    │    │    │    │    ├── save-table-name: q2_select_10
       │         │    │    │    │    │    │    ├── columns: p_partkey:1(int!null) p_mfgr:3(char!null) p_type:5(varchar!null) p_size:6(int!null)
@@ -157,7 +157,7 @@ project
       │         │    │    │    │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
       │         │    │    │    │    │    ├── stats: [rows=2000, distinct(11)=1844.80594, null(11)=0, distinct(12)=1846.09084, null(12)=0, distinct(13)=1846.27302, null(13)=0, distinct(14)=5, null(14)=0, distinct(15)=1846.27302, null(15)=0, distinct(16)=1845.67052, null(16)=0, distinct(17)=1845.06427, null(17)=0, distinct(25)=5, null(25)=0, distinct(26)=5, null(26)=0, distinct(27)=1, null(27)=0, distinct(30)=1, null(30)=0, distinct(31)=0.996222107, null(31)=0]
       │         │    │    │    │    │    ├── key: (11)
-      │         │    │    │    │    │    ├── fd: ()-->(31), (11)-->(12-17), (25)-->(26,27), (27)==(30), (30)==(27), (14)==(25), (25)==(14)
+      │         │    │    │    │    │    ├── fd: ()-->(31), (11)-->(12-17), (25)-->(26,27), (27)==(27,30), (14)==(14,25)
       │         │    │    │    │    │    ├── scan supplier
       │         │    │    │    │    │    │    ├── save-table-name: q2_scan_13
       │         │    │    │    │    │    │    ├── columns: s_suppkey:11(int!null) s_name:12(char!null) s_address:13(varchar!null) s_nationkey:14(int!null) s_phone:15(char!null) s_acctbal:16(float!null) s_comment:17(varchar!null)
@@ -174,7 +174,7 @@ project
       │         │    │    │    │    │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
       │         │    │    │    │    │    │    ├── stats: [rows=5, distinct(25)=5, null(25)=0, distinct(26)=5, null(26)=0, distinct(27)=1, null(27)=0, distinct(30)=1, null(30)=0, distinct(31)=0.996222107, null(31)=0]
       │         │    │    │    │    │    │    ├── key: (25)
-      │         │    │    │    │    │    │    ├── fd: ()-->(31), (25)-->(26,27), (27)==(30), (30)==(27)
+      │         │    │    │    │    │    │    ├── fd: ()-->(31), (25)-->(26,27), (27)==(27,30)
       │         │    │    │    │    │    │    ├── scan nation
       │         │    │    │    │    │    │    │    ├── save-table-name: q2_scan_15
       │         │    │    │    │    │    │    │    ├── columns: n_nationkey:25(int!null) n_name:26(char!null) n_regionkey:27(int!null)
@@ -202,11 +202,11 @@ project
       │         │    │    │    │    │    │    │    └── filters
       │         │    │    │    │    │    │    │         └── r_name:31 = 'EUROPE' [type=bool, outer=(31), constraints=(/31: [/'EUROPE' - /'EUROPE']; tight), fd=()-->(31)]
       │         │    │    │    │    │    │    └── filters
-      │         │    │    │    │    │    │         └── n_regionkey:27 = r_regionkey:30 [type=bool, outer=(27,30), constraints=(/27: (/NULL - ]; /30: (/NULL - ]), fd=(27)==(30), (30)==(27)]
+      │         │    │    │    │    │    │         └── n_regionkey:27 = r_regionkey:30 [type=bool, outer=(27,30), constraints=(/27: (/NULL - ]; /30: (/NULL - ]), fd=(27)==(27,30)]
       │         │    │    │    │    │    └── filters
-      │         │    │    │    │    │         └── s_nationkey:14 = n_nationkey:25 [type=bool, outer=(14,25), constraints=(/14: (/NULL - ]; /25: (/NULL - ]), fd=(14)==(25), (25)==(14)]
+      │         │    │    │    │    │         └── s_nationkey:14 = n_nationkey:25 [type=bool, outer=(14,25), constraints=(/14: (/NULL - ]; /25: (/NULL - ]), fd=(14)==(14,25)]
       │         │    │    │    │    └── filters
-      │         │    │    │    │         └── s_suppkey:11 = ps_suppkey:20 [type=bool, outer=(11,20), constraints=(/11: (/NULL - ]; /20: (/NULL - ]), fd=(11)==(20), (20)==(11)]
+      │         │    │    │    │         └── s_suppkey:11 = ps_suppkey:20 [type=bool, outer=(11,20), constraints=(/11: (/NULL - ]; /20: (/NULL - ]), fd=(11)==(11,20)]
       │         │    │    │    └── filters (true)
       │         │    │    ├── inner-join (lookup supplier@s_nk)
       │         │    │    │    ├── save-table-name: q2_lookup_join_18
@@ -214,7 +214,7 @@ project
       │         │    │    │    ├── key columns: [48] = [43]
       │         │    │    │    ├── stats: [rows=2000, distinct(40)=1844.80594, null(40)=0, distinct(43)=5, null(43)=0, distinct(48)=5, null(48)=0, distinct(50)=1, null(50)=0, distinct(53)=1, null(53)=0, distinct(54)=0.996222107, null(54)=0]
       │         │    │    │    ├── key: (40)
-      │         │    │    │    ├── fd: ()-->(54), (40)-->(43), (48)-->(50), (50)==(53), (53)==(50), (43)==(48), (48)==(43)
+      │         │    │    │    ├── fd: ()-->(54), (40)-->(43), (48)-->(50), (50)==(50,53), (43)==(43,48)
       │         │    │    │    ├── inner-join (merge)
       │         │    │    │    │    ├── save-table-name: q2_merge_join_19
       │         │    │    │    │    ├── columns: n_nationkey:48(int!null) n_regionkey:50(int!null) r_regionkey:53(int!null) r_name:54(char!null)
@@ -222,7 +222,7 @@ project
       │         │    │    │    │    ├── right ordering: +53
       │         │    │    │    │    ├── stats: [rows=5, distinct(48)=5, null(48)=0, distinct(50)=1, null(50)=0, distinct(53)=1, null(53)=0, distinct(54)=0.996222107, null(54)=0]
       │         │    │    │    │    ├── key: (48)
-      │         │    │    │    │    ├── fd: ()-->(54), (48)-->(50), (50)==(53), (53)==(50)
+      │         │    │    │    │    ├── fd: ()-->(54), (48)-->(50), (50)==(50,53)
       │         │    │    │    │    ├── scan nation@n_rk
       │         │    │    │    │    │    ├── save-table-name: q2_scan_20
       │         │    │    │    │    │    ├── columns: n_nationkey:48(int!null) n_regionkey:50(int!null)
@@ -255,7 +255,7 @@ project
       │         │    │    │    │    └── filters (true)
       │         │    │    │    └── filters (true)
       │         │    │    └── filters
-      │         │    │         └── s_suppkey:40 = ps_suppkey:35 [type=bool, outer=(35,40), constraints=(/35: (/NULL - ]; /40: (/NULL - ]), fd=(35)==(40), (40)==(35)]
+      │         │    │         └── s_suppkey:40 = ps_suppkey:35 [type=bool, outer=(35,40), constraints=(/35: (/NULL - ]; /40: (/NULL - ]), fd=(35)==(35,40)]
       │         │    └── aggregations
       │         │         ├── min [as=min:57, type=float, outer=(37)]
       │         │         │    └── ps_supplycost:37 [type=float]
@@ -278,7 +278,7 @@ project
       │         │         └── const-agg [as=p_partkey:1, type=int, outer=(1)]
       │         │              └── p_partkey:1 [type=int]
       │         └── filters
-      │              └── ps_supplycost:22 = min:57 [type=bool, outer=(22,57), constraints=(/22: (/NULL - ]; /57: (/NULL - ]), fd=(22)==(57), (57)==(22)]
+      │              └── ps_supplycost:22 = min:57 [type=bool, outer=(22,57), constraints=(/22: (/NULL - ]; /57: (/NULL - ]), fd=(22)==(22,57)]
       └── 100 [type=int]
 
 stats table=q2_project_1

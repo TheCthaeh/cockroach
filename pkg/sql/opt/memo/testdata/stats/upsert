@@ -172,7 +172,7 @@ with &1
  │         │    │    │    ├── key: (11)
  │         │    │    │    └── fd: (11)-->(12-14)
  │         │    │    └── filters
- │         │    │         └── b:6 = xyz.x:11 [type=bool, outer=(6,11), constraints=(/6: (/NULL - ]; /11: (/NULL - ]), fd=(6)==(11), (11)==(6)]
+ │         │    │         └── b:6 = xyz.x:11 [type=bool, outer=(6,11), constraints=(/6: (/NULL - ]; /11: (/NULL - ]), fd=(6)==(6,11)]
  │         │    └── projections
  │         │         └── 5 [as=y_new:15, type=int]
  │         └── projections
@@ -308,7 +308,7 @@ upsert uv
       │    │    │    ├── key: (10)
       │    │    │    └── fd: (10)-->(11,12), (11)~~>(10,12)
       │    │    └── filters
-      │    │         └── z:8 = v:11 [type=bool, outer=(8,11), constraints=(/8: (/NULL - ]; /11: (/NULL - ]), fd=(8)==(11), (11)==(8)]
+      │    │         └── z:8 = v:11 [type=bool, outer=(8,11), constraints=(/8: (/NULL - ]; /11: (/NULL - ]), fd=(8)==(8,11)]
       │    └── projections
       │         └── 1 [as=v_new:13, type=int]
       └── projections
@@ -381,8 +381,8 @@ upsert mno
       │    │    │    ├── key: (9)
       │    │    │    └── fd: (9)-->(10-12), (10,11)~~>(9,12)
       │    │    └── filters
-      │    │         ├── n:6 = n:10 [type=bool, outer=(6,10), constraints=(/6: (/NULL - ]; /10: (/NULL - ]), fd=(6)==(10), (10)==(6)]
-      │    │         └── o:7 = o:11 [type=bool, outer=(7,11), constraints=(/7: (/NULL - ]; /11: (/NULL - ]), fd=(7)==(11), (11)==(7)]
+      │    │         ├── n:6 = n:10 [type=bool, outer=(6,10), constraints=(/6: (/NULL - ]; /10: (/NULL - ]), fd=(6)==(6,10)]
+      │    │         └── o:7 = o:11 [type=bool, outer=(7,11), constraints=(/7: (/NULL - ]; /11: (/NULL - ]), fd=(7)==(7,11)]
       │    └── projections
       │         └── 5 [as=o_new:13, type=int]
       └── projections

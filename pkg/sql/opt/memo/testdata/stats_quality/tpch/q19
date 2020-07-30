@@ -71,7 +71,7 @@ scalar-group-by
  │    │    ├── columns: l_partkey:2(int!null) l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_shipinstruct:14(char!null) l_shipmode:15(char!null) p_partkey:18(int!null) p_brand:21(char!null) p_size:23(int!null) p_container:24(char!null)
  │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
  │    │    ├── stats: [rows=71.4087386, distinct(2)=71.4087386, null(2)=0, distinct(5)=5.55555556, null(5)=0, distinct(6)=71.4015197, null(6)=0, distinct(7)=10.9833244, null(7)=0, distinct(14)=1, null(14)=0, distinct(15)=2, null(15)=0, distinct(18)=71.4087386, null(18)=0, distinct(21)=3, null(21)=0, distinct(23)=5.55555556, null(23)=0, distinct(24)=12, null(24)=0, distinct(6,7)=71.402791, null(6,7)=0, distinct(21,23,24)=71.4087386, null(21,23,24)=0]
- │    │    ├── fd: ()-->(14), (18)-->(21,23,24), (2)==(18), (18)==(2)
+ │    │    ├── fd: ()-->(14), (18)-->(21,23,24), (2)==(2,18)
  │    │    ├── select
  │    │    │    ├── save-table-name: q19_select_4
  │    │    │    ├── columns: l_partkey:2(int!null) l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_shipinstruct:14(char!null) l_shipmode:15(char!null)
@@ -103,7 +103,7 @@ scalar-group-by
  │    │    │    └── filters
  │    │    │         └── p_size:23 >= 1 [type=bool, outer=(23), constraints=(/23: [/1 - ]; tight)]
  │    │    └── filters
- │    │         ├── p_partkey:18 = l_partkey:2 [type=bool, outer=(2,18), constraints=(/2: (/NULL - ]; /18: (/NULL - ]), fd=(2)==(18), (18)==(2)]
+ │    │         ├── p_partkey:18 = l_partkey:2 [type=bool, outer=(2,18), constraints=(/2: (/NULL - ]; /18: (/NULL - ]), fd=(2)==(2,18)]
  │    │         └── ((((((p_brand:21 = 'Brand#12') AND (p_container:24 IN ('SM BOX', 'SM CASE', 'SM PACK', 'SM PKG'))) AND (l_quantity:5 >= 1.0)) AND (l_quantity:5 <= 11.0)) AND (p_size:23 <= 5)) OR (((((p_brand:21 = 'Brand#23') AND (p_container:24 IN ('MED BAG', 'MED BOX', 'MED PACK', 'MED PKG'))) AND (l_quantity:5 >= 10.0)) AND (l_quantity:5 <= 20.0)) AND (p_size:23 <= 10))) OR (((((p_brand:21 = 'Brand#34') AND (p_container:24 IN ('LG BOX', 'LG CASE', 'LG PACK', 'LG PKG'))) AND (l_quantity:5 >= 20.0)) AND (l_quantity:5 <= 30.0)) AND (p_size:23 <= 15)) [type=bool, outer=(5,21,23,24), constraints=(/5: [/1.0 - /30.0]; /21: [/'Brand#12' - /'Brand#12'] [/'Brand#23' - /'Brand#23'] [/'Brand#34' - /'Brand#34']; /23: (/NULL - /15]; /24: [/'LG BOX' - /'LG BOX'] [/'LG CASE' - /'LG CASE'] [/'LG PACK' - /'LG PACK'] [/'LG PKG' - /'LG PKG'] [/'MED BAG' - /'MED BAG'] [/'MED BOX' - /'MED BOX'] [/'MED PACK' - /'MED PACK'] [/'MED PKG' - /'MED PKG'] [/'SM BOX' - /'SM BOX'] [/'SM CASE' - /'SM CASE'] [/'SM PACK' - /'SM PACK'] [/'SM PKG' - /'SM PKG'])]
  │    └── projections
  │         └── l_extendedprice:6 * (1.0 - l_discount:7) [as=column28:28, type=float, outer=(6,7), immutable]

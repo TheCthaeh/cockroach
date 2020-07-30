@@ -558,7 +558,7 @@ scalar-group-by
  │         ├── key columns: [3 5] = [13 12]
  │         ├── lookup columns are key
  │         ├── stats: [rows=218.87081, distinct(1)=19.9996466, null(1)=0, distinct(2)=1, null(2)=0, distinct(3)=1, null(3)=0, distinct(5)=187.914589, null(5)=0, distinct(12)=187.914589, null(12)=0, distinct(13)=1, null(13)=0, distinct(14)=30.3110384, null(14)=0]
- │         ├── fd: ()-->(2,3,13), (12)-->(14), (5)==(12), (12)==(5), (3)==(13), (13)==(3)
+ │         ├── fd: ()-->(2,3,13), (12)-->(14), (5)==(5,12), (3)==(3,13)
  │         ├── scan order_line
  │         │    ├── save-table-name: stock_level_02_scan_4
  │         │    ├── columns: ol_o_id:1(int!null) ol_d_id:2(int!null) ol_w_id:3(int!null) ol_i_id:5(int!null)
@@ -651,7 +651,7 @@ scalar-group-by
  │    ├── immutable
  │    ├── stats: [rows=3.33333333, distinct(1)=3.33333333, null(1)=0, distinct(9)=1, null(9)=0, distinct(12)=3.33333333, null(12)=0, distinct(23)=3.33333333, null(23)=0]
  │    ├── key: (12)
- │    ├── fd: (1)-->(9), (12)-->(23), (1)==(12), (12)==(1)
+ │    ├── fd: (1)-->(9), (12)-->(23), (1)==(1,12)
  │    ├── scan warehouse
  │    │    ├── save-table-name: consistency_01_scan_3
  │    │    ├── columns: w_id:1(int!null) w_ytd:9(decimal)
@@ -1296,9 +1296,9 @@ scalar-group-by
  │    │    │         └── filters
  │    │    │              └── o_carrier_id:6 IS NULL [type=bool, outer=(6), constraints=(/6: [/NULL - /NULL]; tight), fd=()-->(6)]
  │    │    └── filters
- │    │         ├── ol_w_id:12 = o_w_id:3 [type=bool, outer=(3,12), constraints=(/3: (/NULL - ]; /12: (/NULL - ]), fd=(3)==(12), (12)==(3)]
- │    │         ├── ol_d_id:11 = o_d_id:2 [type=bool, outer=(2,11), constraints=(/2: (/NULL - ]; /11: (/NULL - ]), fd=(2)==(11), (11)==(2)]
- │    │         └── ol_o_id:10 = o_id:1 [type=bool, outer=(1,10), constraints=(/1: (/NULL - ]; /10: (/NULL - ]), fd=(1)==(10), (10)==(1)]
+ │    │         ├── ol_w_id:12 = o_w_id:3 [type=bool, outer=(3,12), constraints=(/3: (/NULL - ]; /12: (/NULL - ]), fd=(3)==(3,12)]
+ │    │         ├── ol_d_id:11 = o_d_id:2 [type=bool, outer=(2,11), constraints=(/2: (/NULL - ]; /11: (/NULL - ]), fd=(2)==(2,11)]
+ │    │         └── ol_o_id:10 = o_id:1 [type=bool, outer=(1,10), constraints=(/1: (/NULL - ]; /10: (/NULL - ]), fd=(1)==(1,10)]
  │    └── filters
  │         └── (ol_o_id:10 IS NULL) OR (o_id:1 IS NULL) [type=bool, outer=(1,10)]
  └── aggregations

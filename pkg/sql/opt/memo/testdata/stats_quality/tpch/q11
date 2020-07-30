@@ -78,21 +78,21 @@ sort
       │    │    │    ├── lookup columns are key
       │    │    │    ├── stats: [rows=32258.0645, distinct(1)=29783.4869, null(1)=0, distinct(2)=399.934613, null(2)=0, distinct(3)=9536.12259, null(3)=0, distinct(4)=27589.3232, null(4)=0, distinct(7)=399.934613, null(7)=0, distinct(10)=1, null(10)=0, distinct(15)=1, null(15)=0, distinct(16)=1, null(16)=0, distinct(3,4)=31617.9161, null(3,4)=0]
       │    │    │    ├── key: (1,7)
-      │    │    │    ├── fd: ()-->(16), (1,2)-->(3,4), (7)-->(10), (10)==(15), (15)==(10), (2)==(7), (7)==(2)
+      │    │    │    ├── fd: ()-->(16), (1,2)-->(3,4), (7)-->(10), (10)==(10,15), (2)==(2,7)
       │    │    │    ├── inner-join (lookup partsupp@ps_sk)
       │    │    │    │    ├── save-table-name: q11_lookup_join_6
       │    │    │    │    ├── columns: ps_partkey:1(int!null) ps_suppkey:2(int!null) s_suppkey:7(int!null) s_nationkey:10(int!null) n_nationkey:15(int!null) n_name:16(char!null)
       │    │    │    │    ├── key columns: [7] = [2]
       │    │    │    │    ├── stats: [rows=32258.0645, distinct(1)=29783.4869, null(1)=0, distinct(2)=399.934613, null(2)=0, distinct(7)=399.934613, null(7)=0, distinct(10)=1, null(10)=0, distinct(15)=1, null(15)=0, distinct(16)=1, null(16)=0]
       │    │    │    │    ├── key: (1,7)
-      │    │    │    │    ├── fd: ()-->(16), (7)-->(10), (10)==(15), (15)==(10), (2)==(7), (7)==(2)
+      │    │    │    │    ├── fd: ()-->(16), (7)-->(10), (10)==(10,15), (2)==(2,7)
       │    │    │    │    ├── inner-join (lookup supplier@s_nk)
       │    │    │    │    │    ├── save-table-name: q11_lookup_join_7
       │    │    │    │    │    ├── columns: s_suppkey:7(int!null) s_nationkey:10(int!null) n_nationkey:15(int!null) n_name:16(char!null)
       │    │    │    │    │    ├── key columns: [15] = [10]
       │    │    │    │    │    ├── stats: [rows=400, distinct(7)=399.934613, null(7)=0, distinct(10)=1, null(10)=0, distinct(15)=1, null(15)=0, distinct(16)=1, null(16)=0]
       │    │    │    │    │    ├── key: (7)
-      │    │    │    │    │    ├── fd: ()-->(16), (7)-->(10), (10)==(15), (15)==(10)
+      │    │    │    │    │    ├── fd: ()-->(16), (7)-->(10), (10)==(10,15)
       │    │    │    │    │    ├── select
       │    │    │    │    │    │    ├── save-table-name: q11_select_8
       │    │    │    │    │    │    ├── columns: n_nationkey:15(int!null) n_name:16(char!null)
@@ -148,21 +148,21 @@ sort
                           │    │    │    ├── key columns: [22 23] = [22 23]
                           │    │    │    ├── lookup columns are key
                           │    │    │    ├── stats: [rows=32258.0645, distinct(23)=399.934613, null(23)=0, distinct(24)=9536.12259, null(24)=0, distinct(25)=27589.3232, null(25)=0, distinct(28)=399.934613, null(28)=0, distinct(31)=1, null(31)=0, distinct(36)=1, null(36)=0, distinct(37)=1, null(37)=0, distinct(24,25)=31617.9161, null(24,25)=0]
-                          │    │    │    ├── fd: ()-->(37), (28)-->(31), (31)==(36), (36)==(31), (23)==(28), (28)==(23)
+                          │    │    │    ├── fd: ()-->(37), (28)-->(31), (31)==(31,36), (23)==(23,28)
                           │    │    │    ├── inner-join (lookup partsupp@ps_sk)
                           │    │    │    │    ├── save-table-name: q11_lookup_join_14
                           │    │    │    │    ├── columns: ps_partkey:22(int!null) ps_suppkey:23(int!null) s_suppkey:28(int!null) s_nationkey:31(int!null) n_nationkey:36(int!null) n_name:37(char!null)
                           │    │    │    │    ├── key columns: [28] = [23]
                           │    │    │    │    ├── stats: [rows=32258.0645, distinct(22)=29783.4869, null(22)=0, distinct(23)=399.934613, null(23)=0, distinct(28)=399.934613, null(28)=0, distinct(31)=1, null(31)=0, distinct(36)=1, null(36)=0, distinct(37)=1, null(37)=0]
                           │    │    │    │    ├── key: (22,28)
-                          │    │    │    │    ├── fd: ()-->(37), (28)-->(31), (31)==(36), (36)==(31), (23)==(28), (28)==(23)
+                          │    │    │    │    ├── fd: ()-->(37), (28)-->(31), (31)==(31,36), (23)==(23,28)
                           │    │    │    │    ├── inner-join (lookup supplier@s_nk)
                           │    │    │    │    │    ├── save-table-name: q11_lookup_join_15
                           │    │    │    │    │    ├── columns: s_suppkey:28(int!null) s_nationkey:31(int!null) n_nationkey:36(int!null) n_name:37(char!null)
                           │    │    │    │    │    ├── key columns: [36] = [31]
                           │    │    │    │    │    ├── stats: [rows=400, distinct(28)=399.934613, null(28)=0, distinct(31)=1, null(31)=0, distinct(36)=1, null(36)=0, distinct(37)=1, null(37)=0]
                           │    │    │    │    │    ├── key: (28)
-                          │    │    │    │    │    ├── fd: ()-->(37), (28)-->(31), (31)==(36), (36)==(31)
+                          │    │    │    │    │    ├── fd: ()-->(37), (28)-->(31), (31)==(31,36)
                           │    │    │    │    │    ├── select
                           │    │    │    │    │    │    ├── save-table-name: q11_select_16
                           │    │    │    │    │    │    ├── columns: n_nationkey:36(int!null) n_name:37(char!null)

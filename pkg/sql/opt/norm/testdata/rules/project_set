@@ -123,7 +123,7 @@ semi-join-apply
  │    ├── (5,)
  │    └── (x:1,)
  └── filters
-      └── unnest:5 = y:2 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+      └── unnest:5 = y:2 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
 
 # Case with multiple arrays of different types and different sizes, including an
 # empty array.

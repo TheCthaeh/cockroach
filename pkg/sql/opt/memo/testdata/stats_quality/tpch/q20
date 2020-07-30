@@ -74,7 +74,7 @@ sort
            ├── immutable
            ├── stats: [rows=5.13396896, distinct(1)=5.13312469, null(1)=0, distinct(2)=5.13396829, null(2)=0, distinct(3)=5.13396896, null(3)=0, distinct(4)=1, null(4)=0, distinct(9)=1, null(9)=0, distinct(10)=0.994700339, null(10)=0]
            ├── key: (1)
-           ├── fd: ()-->(10), (1)-->(2-4), (4)==(9), (9)==(4)
+           ├── fd: ()-->(10), (1)-->(2-4), (4)==(4,9)
            └── inner-join (hash)
                 ├── save-table-name: q20_inner_join_4
                 ├── columns: s_suppkey:1(int!null) s_name:2(char!null) s_address:3(varchar!null) s_nationkey:4(int!null) n_nationkey:9(int!null) n_name:10(char!null) ps_suppkey:15(int!null)
@@ -82,7 +82,7 @@ sort
                 ├── immutable
                 ├── stats: [rows=126.594795, distinct(1)=126.574101, null(1)=0, distinct(2)=108.633373, null(2)=0, distinct(3)=108.633704, null(3)=0, distinct(4)=1, null(4)=0, distinct(9)=1, null(9)=0, distinct(10)=1, null(10)=0, distinct(15)=126.574101, null(15)=0]
                 ├── key: (15)
-                ├── fd: ()-->(10), (1)-->(2-4), (4)==(9), (9)==(4), (1)==(15), (15)==(1)
+                ├── fd: ()-->(10), (1)-->(2-4), (4)==(4,9), (1)==(1,15)
                 ├── inner-join (lookup supplier)
                 │    ├── save-table-name: q20_lookup_join_5
                 │    ├── columns: s_suppkey:1(int!null) s_name:2(char!null) s_address:3(varchar!null) s_nationkey:4(int!null) ps_suppkey:15(int!null)
@@ -91,7 +91,7 @@ sort
                 │    ├── immutable
                 │    ├── stats: [rows=127.59486, distinct(1)=126.574101, null(1)=0, distinct(2)=126.789831, null(2)=0, distinct(3)=126.790639, null(3)=0, distinct(4)=24.8481976, null(4)=0, distinct(15)=126.574101, null(15)=0]
                 │    ├── key: (15)
-                │    ├── fd: (1)-->(2-4), (1)==(15), (15)==(1)
+                │    ├── fd: (1)-->(2-4), (1)==(1,15)
                 │    ├── distinct-on
                 │    │    ├── save-table-name: q20_distinct_on_6
                 │    │    ├── columns: ps_suppkey:15(int!null)
@@ -132,7 +132,7 @@ sort
                 │    │         │         │    │    ├── columns: ps_partkey:14(int!null) ps_suppkey:15(int!null) ps_availqty:16(int!null) l_partkey:31(int!null) l_suppkey:32(int!null) l_quantity:34(float!null) l_shipdate:40(date!null)
                 │    │         │         │    │    ├── multiplicity: left-rows(exactly-one), right-rows(zero-or-more)
                 │    │         │         │    │    ├── stats: [rows=379.722303, distinct(14)=379.722303, null(14)=0, distinct(15)=379.722303, null(15)=0, distinct(16)=372.546594, null(16)=0, distinct(31)=379.722303, null(31)=0, distinct(32)=379.722303, null(32)=0, distinct(34)=49.9748381, null(34)=0, distinct(40)=236.032274, null(40)=0, distinct(14,15)=379.722303, null(14,15)=0]
-                │    │         │         │    │    ├── fd: (14,15)-->(16), (14)==(31), (31)==(14), (15)==(32), (32)==(15)
+                │    │         │         │    │    ├── fd: (14,15)-->(16), (14)==(14,31), (15)==(15,32)
                 │    │         │         │    │    ├── index-join lineitem
                 │    │         │         │    │    │    ├── save-table-name: q20_index_join_12
                 │    │         │         │    │    │    ├── columns: l_partkey:31(int!null) l_suppkey:32(int!null) l_quantity:34(float!null) l_shipdate:40(date!null)
@@ -161,8 +161,8 @@ sort
                 │    │         │         │    │    │    ├── key: (14,15)
                 │    │         │         │    │    │    └── fd: (14,15)-->(16)
                 │    │         │         │    │    └── filters
-                │    │         │         │    │         ├── l_partkey:31 = ps_partkey:14 [type=bool, outer=(14,31), constraints=(/14: (/NULL - ]; /31: (/NULL - ]), fd=(14)==(31), (31)==(14)]
-                │    │         │         │    │         └── l_suppkey:32 = ps_suppkey:15 [type=bool, outer=(15,32), constraints=(/15: (/NULL - ]; /32: (/NULL - ]), fd=(15)==(32), (32)==(15)]
+                │    │         │         │    │         ├── l_partkey:31 = ps_partkey:14 [type=bool, outer=(14,31), constraints=(/14: (/NULL - ]; /31: (/NULL - ]), fd=(14)==(14,31)]
+                │    │         │         │    │         └── l_suppkey:32 = ps_suppkey:15 [type=bool, outer=(15,32), constraints=(/15: (/NULL - ]; /32: (/NULL - ]), fd=(15)==(15,32)]
                 │    │         │         │    └── aggregations
                 │    │         │         │         ├── sum [as=sum:47, type=float, outer=(34)]
                 │    │         │         │         │    └── l_quantity:34 [type=float]
@@ -190,7 +190,7 @@ sort
                 │    └── filters
                 │         └── n_name:10 = 'CANADA' [type=bool, outer=(10), constraints=(/10: [/'CANADA' - /'CANADA']; tight), fd=()-->(10)]
                 └── filters
-                     └── s_nationkey:4 = n_nationkey:9 [type=bool, outer=(4,9), constraints=(/4: (/NULL - ]; /9: (/NULL - ]), fd=(4)==(9), (9)==(4)]
+                     └── s_nationkey:4 = n_nationkey:9 [type=bool, outer=(4,9), constraints=(/4: (/NULL - ]; /9: (/NULL - ]), fd=(4)==(4,9)]
 
 stats table=q20_sort_1
 ----

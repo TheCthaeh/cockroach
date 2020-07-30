@@ -939,7 +939,7 @@ inner-join (hash)
  ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
  ├── stats: [rows=990, distinct(1)=99, null(1)=0, distinct(5)=99, null(5)=0]
  ├── cost: 2219.96
- ├── fd: (5)-->(6), (1)==(5), (5)==(1)
+ ├── fd: (5)-->(6), (1)==(1,5)
  ├── prune: (2,6)
  ├── scan tc
  │    ├── columns: a:1 b:2
@@ -958,7 +958,7 @@ inner-join (hash)
  │    ├── interesting orderings: (+5)
  │    └── unfiltered-cols: (5-7)
  └── filters
-      └── k:5 = a:1 [outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(5), (5)==(1)]
+      └── k:5 = a:1 [outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(1,5)]
 
 query T
 EXPLAIN (OPT) SELECT * FROM tc WHERE a + 2 * b > 1 ORDER BY a*b

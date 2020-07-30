@@ -445,12 +445,12 @@ SELECT * FROM a JOIN b ON k=z WHERE x > 0 AND x <= 5000 LIMIT 6003
 limit
  ├── columns: k:1!null i:2 s:3 d:4!null x:6!null z:7!null
  ├── cardinality: [0 - 6003]
- ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ ├── fd: (1)-->(2-4), (1)==(1,7)
  ├── inner-join (lookup a)
  │    ├── columns: k:1!null i:2 s:3 d:4!null x:6!null z:7!null
  │    ├── key columns: [7] = [1]
  │    ├── lookup columns are key
- │    ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ │    ├── fd: (1)-->(2-4), (1)==(1,7)
  │    ├── limit hint: 6003.00
  │    ├── select
  │    │    ├── columns: x:6!null z:7!null
@@ -470,12 +470,12 @@ SELECT * FROM a JOIN b ON k=z WHERE x > 0 AND x <= 5000 LIMIT 3
 limit
  ├── columns: k:1!null i:2 s:3 d:4!null x:6!null z:7!null
  ├── cardinality: [0 - 3]
- ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ ├── fd: (1)-->(2-4), (1)==(1,7)
  ├── inner-join (lookup a)
  │    ├── columns: k:1!null i:2 s:3 d:4!null x:6!null z:7!null
  │    ├── key columns: [7] = [1]
  │    ├── lookup columns are key
- │    ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ │    ├── fd: (1)-->(2-4), (1)==(1,7)
  │    ├── limit hint: 3.00
  │    ├── select
  │    │    ├── columns: x:6!null z:7!null
@@ -568,19 +568,19 @@ project
       │    ├── cardinality: [0 - 0]
       │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
       │    ├── immutable
-      │    ├── fd: ()-->(4), (5)==(8), (8)==(5)
+      │    ├── fd: ()-->(4), (5)==(5,8)
       │    ├── limit hint: 1.00
       │    ├── inner-join (hash)
       │    │    ├── columns: t0.c0:5!null t1.c0:8!null
       │    │    ├── multiplicity: left-rows(zero-or-more), right-rows(zero-or-one)
-      │    │    ├── fd: (5)==(8), (8)==(5)
+      │    │    ├── fd: (5)==(5,8)
       │    │    ├── scan t0
       │    │    │    ├── columns: t0.c0:5
       │    │    │    └── lax-key: (5)
       │    │    ├── scan t1
       │    │    │    └── columns: t1.c0:8
       │    │    └── filters
-      │    │         └── t0.c0:5 = t1.c0:8 [outer=(5,8), fd=(5)==(8), (8)==(5)]
+      │    │         └── t0.c0:5 = t1.c0:8 [outer=(5,8), fd=(5)==(5,8)]
       │    ├── project
       │    │    ├── columns: "?column?":4!null
       │    │    ├── cardinality: [0 - 0]

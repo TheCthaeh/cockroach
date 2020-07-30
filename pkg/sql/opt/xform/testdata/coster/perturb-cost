@@ -24,7 +24,7 @@ sort
  ├── stats: [rows=1000, distinct(1)=1000, null(1)=0, distinct(4)=1000, null(4)=0]
  ├── cost: 2319.38569
  ├── key: (4)
- ├── fd: (1)-->(2), (1)==(4), (4)==(1)
+ ├── fd: (1)-->(2), (1)==(1,4)
  ├── ordering: +2
  └── inner-join (hash)
       ├── columns: a.x:1!null y:2 b.x:4!null
@@ -32,7 +32,7 @@ sort
       ├── stats: [rows=1000, distinct(1)=1000, null(1)=0, distinct(4)=1000, null(4)=0]
       ├── cost: 2100.06
       ├── key: (4)
-      ├── fd: (1)-->(2), (1)==(4), (4)==(1)
+      ├── fd: (1)-->(2), (1)==(1,4)
       ├── scan a
       │    ├── columns: a.x:1!null y:2
       │    ├── stats: [rows=1000, distinct(1)=1000, null(1)=0]
@@ -45,7 +45,7 @@ sort
       │    ├── cost: 1020.02
       │    └── key: (4)
       └── filters
-           └── a.x:1 = b.x:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+           └── a.x:1 = b.x:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
 
 opt perturb-cost=(0.9)
 SELECT 1

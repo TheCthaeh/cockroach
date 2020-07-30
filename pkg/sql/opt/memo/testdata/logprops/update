@@ -89,7 +89,7 @@ UPDATE abcde SET b=10 WHERE a=1 RETURNING *
 project
  ├── columns: a:1(int!null) b:2(int!null) c:3(int!null) d:4(int!null)
  ├── volatile, mutations
- ├── fd: ()-->(1,2), (3)-->(4)
+ ├── fd: ()-->(1,2)
  ├── prune: (1-4)
  └── update abcde
       ├── columns: a:1(int!null) b:2(int!null) c:3(int!null) d:4(int!null) rowid:5(int!null)
@@ -100,7 +100,7 @@ project
       │    └── column16:16 => e:6
       ├── volatile, mutations
       ├── key: (5)
-      ├── fd: ()-->(1,2), (5)-->(3,4), (3)-->(4)
+      ├── fd: ()-->(1,2), (5)-->(3,4)
       └── project
            ├── columns: column17:17(int!null) a:8(int!null) b:9(int) c:10(int!null) d:11(int) rowid:12(int!null) e:13(int) crdb_internal_mvcc_timestamp:14(decimal) b_new:15(int!null) column16:16(int!null)
            ├── immutable
@@ -240,7 +240,7 @@ UPDATE abcde SET a=1 WHERE b=c RETURNING *;
 project
  ├── columns: a:1(int!null) b:2(int!null) c:3(int!null) d:4(int!null)
  ├── volatile, mutations
- ├── fd: ()-->(1), (2)==(3), (3)==(2), (2)-->(4)
+ ├── fd: ()-->(1), (2)==(3)
  ├── prune: (1-4)
  └── update abcde
       ├── columns: a:1(int!null) b:2(int!null) c:3(int!null) d:4(int!null) rowid:5(int!null)
@@ -251,30 +251,30 @@ project
       │    └── column16:16 => e:6
       ├── volatile, mutations
       ├── key: (5)
-      ├── fd: ()-->(1), (2)==(3), (3)==(2), (5)-->(2-4), (2)-->(4)
+      ├── fd: ()-->(1), (2)==(3), (5)-->(2-4)
       └── project
            ├── columns: column17:17(int!null) a:8(int!null) b:9(int!null) c:10(int!null) d:11(int) rowid:12(int!null) e:13(int) crdb_internal_mvcc_timestamp:14(decimal) a_new:15(int!null) column16:16(int!null)
            ├── immutable
            ├── key: (12)
-           ├── fd: ()-->(15,16), (12)-->(8-11,13,14), (9)==(10), (10)==(9), (10)-->(17)
+           ├── fd: ()-->(15,16), (12)-->(8-11,13,14), (9)==(9,10), (10)-->(17)
            ├── prune: (8-17)
            ├── interesting orderings: (+12)
            ├── project
            │    ├── columns: column16:16(int!null) a:8(int!null) b:9(int!null) c:10(int!null) d:11(int) rowid:12(int!null) e:13(int) crdb_internal_mvcc_timestamp:14(decimal) a_new:15(int!null)
            │    ├── key: (12)
-           │    ├── fd: ()-->(15,16), (12)-->(8-11,13,14), (9)==(10), (10)==(9)
+           │    ├── fd: ()-->(15,16), (12)-->(8-11,13,14), (9)==(9,10)
            │    ├── prune: (8-16)
            │    ├── interesting orderings: (+12)
            │    ├── project
            │    │    ├── columns: a_new:15(int!null) a:8(int!null) b:9(int!null) c:10(int!null) d:11(int) rowid:12(int!null) e:13(int) crdb_internal_mvcc_timestamp:14(decimal)
            │    │    ├── key: (12)
-           │    │    ├── fd: ()-->(15), (12)-->(8-11,13,14), (9)==(10), (10)==(9)
+           │    │    ├── fd: ()-->(15), (12)-->(8-11,13,14), (9)==(9,10)
            │    │    ├── prune: (8-15)
            │    │    ├── interesting orderings: (+12)
            │    │    ├── select
            │    │    │    ├── columns: a:8(int!null) b:9(int!null) c:10(int!null) d:11(int) rowid:12(int!null) e:13(int) crdb_internal_mvcc_timestamp:14(decimal)
            │    │    │    ├── key: (12)
-           │    │    │    ├── fd: (12)-->(8-11,13,14), (9)==(10), (10)==(9)
+           │    │    │    ├── fd: (12)-->(8-11,13,14), (9)==(9,10)
            │    │    │    ├── prune: (8,11-14)
            │    │    │    ├── interesting orderings: (+12)
            │    │    │    ├── scan abcde
@@ -291,7 +291,7 @@ project
            │    │    │    │    ├── prune: (8-14)
            │    │    │    │    └── interesting orderings: (+12)
            │    │    │    └── filters
-           │    │    │         └── eq [type=bool, outer=(9,10), constraints=(/9: (/NULL - ]; /10: (/NULL - ]), fd=(9)==(10), (10)==(9)]
+           │    │    │         └── eq [type=bool, outer=(9,10), constraints=(/9: (/NULL - ]; /10: (/NULL - ]), fd=(9)==(9,10)]
            │    │    │              ├── variable: b:9 [type=int]
            │    │    │              └── variable: c:10 [type=int]
            │    │    └── projections

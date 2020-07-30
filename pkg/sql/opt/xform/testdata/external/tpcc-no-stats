@@ -1040,7 +1040,7 @@ scalar-group-by
  │         ├── columns: ol_o_id:1!null ol_d_id:2!null ol_w_id:3!null ol_i_id:5!null s_i_id:12!null s_w_id:13!null s_quantity:14!null
  │         ├── key columns: [3 5] = [13 12]
  │         ├── lookup columns are key
- │         ├── fd: ()-->(2,3,13), (12)-->(14), (5)==(12), (12)==(5), (3)==(13), (13)==(3)
+ │         ├── fd: ()-->(2,3,13), (12)-->(14), (5)==(5,12), (3)==(3,13)
  │         ├── scan order_line
  │         │    ├── columns: ol_o_id:1!null ol_d_id:2!null ol_w_id:3!null ol_i_id:5!null
  │         │    ├── constraint: /3/2/-1/4: [/10/100/999 - /10/100/980]
@@ -1081,7 +1081,7 @@ scalar-group-by
  │    ├── lookup columns are key
  │    ├── immutable
  │    ├── key: (12)
- │    ├── fd: (1)-->(9), (12)-->(23), (1)==(12), (12)==(1)
+ │    ├── fd: (1)-->(9), (12)-->(23), (1)==(1,12)
  │    ├── group-by
  │    │    ├── columns: d_w_id:12!null sum:23
  │    │    ├── grouping columns: d_w_id:12!null
@@ -1399,9 +1399,9 @@ scalar-group-by
  │    │    │         └── filters
  │    │    │              └── ol_delivery_d:16 IS NULL [outer=(16), constraints=(/16: [/NULL - /NULL]; tight), fd=()-->(16)]
  │    │    └── filters
- │    │         ├── ol_w_id:12 = o_w_id:3 [outer=(3,12), constraints=(/3: (/NULL - ]; /12: (/NULL - ]), fd=(3)==(12), (12)==(3)]
- │    │         ├── ol_d_id:11 = o_d_id:2 [outer=(2,11), constraints=(/2: (/NULL - ]; /11: (/NULL - ]), fd=(2)==(11), (11)==(2)]
- │    │         └── ol_o_id:10 = o_id:1 [outer=(1,10), constraints=(/1: (/NULL - ]; /10: (/NULL - ]), fd=(1)==(10), (10)==(1)]
+ │    │         ├── ol_w_id:12 = o_w_id:3 [outer=(3,12), constraints=(/3: (/NULL - ]; /12: (/NULL - ]), fd=(3)==(3,12)]
+ │    │         ├── ol_d_id:11 = o_d_id:2 [outer=(2,11), constraints=(/2: (/NULL - ]; /11: (/NULL - ]), fd=(2)==(2,11)]
+ │    │         └── ol_o_id:10 = o_id:1 [outer=(1,10), constraints=(/1: (/NULL - ]; /10: (/NULL - ]), fd=(1)==(1,10)]
  │    └── filters
  │         └── (ol_o_id:10 IS NULL) OR (o_id:1 IS NULL) [outer=(1,10)]
  └── aggregations

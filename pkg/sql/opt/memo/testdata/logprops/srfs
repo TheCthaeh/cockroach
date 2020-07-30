@@ -69,7 +69,7 @@ project
  │    │    │    │    │    ├── prune: (5,6)
  │    │    │    │    │    └── interesting orderings: (+5)
  │    │    │    │    └── filters
- │    │    │    │         └── eq [type=bool, outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(5), (5)==(1)]
+ │    │    │    │         └── eq [type=bool, outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(1,5)]
  │    │    │    │              ├── variable: x:5 [type=int]
  │    │    │    │              └── variable: u:1 [type=int]
  │    │    │    ├── values

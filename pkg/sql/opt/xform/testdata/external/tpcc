@@ -1040,7 +1040,7 @@ scalar-group-by
  │         ├── columns: ol_o_id:1!null ol_d_id:2!null ol_w_id:3!null ol_i_id:5!null s_i_id:12!null s_w_id:13!null s_quantity:14!null
  │         ├── key columns: [3 5] = [13 12]
  │         ├── lookup columns are key
- │         ├── fd: ()-->(2,3,13), (12)-->(14), (5)==(12), (12)==(5), (3)==(13), (13)==(3)
+ │         ├── fd: ()-->(2,3,13), (12)-->(14), (5)==(5,12), (3)==(3,13)
  │         ├── scan order_line
  │         │    ├── columns: ol_o_id:1!null ol_d_id:2!null ol_w_id:3!null ol_i_id:5!null
  │         │    ├── constraint: /3/2/-1/4: [/10/100/999 - /10/100/980]
@@ -1081,7 +1081,7 @@ scalar-group-by
  │    ├── right ordering: +12
  │    ├── immutable
  │    ├── key: (12)
- │    ├── fd: (1)-->(9), (12)-->(23), (1)==(12), (12)==(1)
+ │    ├── fd: (1)-->(9), (12)-->(23), (1)==(1,12)
  │    ├── scan warehouse
  │    │    ├── columns: w_id:1!null w_ytd:9
  │    │    ├── key: (1)

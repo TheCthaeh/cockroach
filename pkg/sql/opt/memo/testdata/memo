@@ -81,14 +81,14 @@ project
  │    ├── internal-ordering: +2
  │    ├── cardinality: [0 - 10]
  │    ├── immutable
- │    ├── fd: (4)==(7), (7)==(4)
+ │    ├── fd: (4)==(4,7)
  │    ├── ordering: +2
  │    ├── inner-join (lookup b)
  │    │    ├── columns: y:2(int!null) b.x:4(string!null) column7:7(string!null)
  │    │    ├── key columns: [7] = [4]
  │    │    ├── lookup columns are key
  │    │    ├── immutable
- │    │    ├── fd: (4)==(7), (7)==(4)
+ │    │    ├── fd: (4)==(4,7)
  │    │    ├── ordering: +2
  │    │    ├── limit hint: 10.00
  │    │    ├── sort

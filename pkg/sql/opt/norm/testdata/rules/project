@@ -140,7 +140,7 @@ project
  │    │    ├── columns: a.x:5!null
  │    │    └── key: (5)
  │    └── filters
- │         └── b.x:1 = a.x:5 [outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(5), (5)==(1)]
+ │         └── b.x:1 = a.x:5 [outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(1,5)]
  └── projections
       └── a.x:5 + 1 [as="?column?":10, outer=(5), immutable]
 
@@ -157,7 +157,7 @@ project
       ├── columns: k:1!null v:2 r2:5!null x:7!null
       ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
       ├── key: (1)
-      ├── fd: (1)-->(2,5), (5)==(7), (7)==(5)
+      ├── fd: (1)-->(2,5), (5)==(5,7)
       ├── scan fks
       │    ├── columns: k:1!null v:2 r2:5
       │    ├── key: (1)
@@ -166,7 +166,7 @@ project
       │    ├── columns: x:7!null
       │    └── key: (7)
       └── filters
-           └── r2:5 = x:7 [outer=(5,7), constraints=(/5: (/NULL - ]; /7: (/NULL - ]), fd=(5)==(7), (7)==(5)]
+           └── r2:5 = x:7 [outer=(5,7), constraints=(/5: (/NULL - ]; /7: (/NULL - ]), fd=(5)==(5,7)]
 
 # No-op case because r1 is not unique.
 # InnerJoin case with not-null foreign key.
@@ -179,7 +179,7 @@ project
  └── inner-join (hash)
       ├── columns: x:1!null y:2 r1:9!null
       ├── multiplicity: left-rows(zero-or-more), right-rows(exactly-one)
-      ├── fd: (1)-->(2), (1)==(9), (9)==(1)
+      ├── fd: (1)-->(2), (1)==(1,9)
       ├── scan a
       │    ├── columns: x:1!null y:2
       │    ├── key: (1)
@@ -187,7 +187,7 @@ project
       ├── scan fks
       │    └── columns: r1:9!null
       └── filters
-           └── x:1 = r1:9 [outer=(1,9), constraints=(/1: (/NULL - ]; /9: (/NULL - ]), fd=(1)==(9), (9)==(1)]
+           └── x:1 = r1:9 [outer=(1,9), constraints=(/1: (/NULL - ]; /9: (/NULL - ]), fd=(1)==(1,9)]
 
 # No-op case because r1 is not unique.
 # LeftJoin case with not-null foreign key.
@@ -208,7 +208,7 @@ project
       ├── scan fks
       │    └── columns: r1:9!null
       └── filters
-           └── x:1 = r1:9 [outer=(1,9), constraints=(/1: (/NULL - ]; /9: (/NULL - ]), fd=(1)==(9), (9)==(1)]
+           └── x:1 = r1:9 [outer=(1,9), constraints=(/1: (/NULL - ]; /9: (/NULL - ]), fd=(1)==(1,9)]
 
 # --------------------------------------------------
 # EliminateJoinUnderProjectRight
@@ -241,7 +241,7 @@ inner-join (hash)
  ├── columns: x:1!null x:5!null
  ├── multiplicity: left-rows(exactly-one), right-rows(exactly-one)
  ├── key: (5)
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── scan b
  │    ├── columns: b.x:1!null
  │    └── key: (1)
@@ -249,7 +249,7 @@ inner-join (hash)
  │    ├── columns: b1.x:5!null
  │    └── key: (5)
  └── filters
-      └── b.x:1 = b1.x:5 [outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(5), (5)==(1)]
+      └── b.x:1 = b1.x:5 [outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(1,5)]
 
 # --------------------------------------------------
 # EliminateProject
@@ -312,7 +312,7 @@ project
  │    ├── columns: a.x:1!null y:2 b.x:6!null
  │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
  │    ├── key: (6)
- │    ├── fd: (1)-->(2), (1)==(6), (6)==(1)
+ │    ├── fd: (1)-->(2), (1)==(1,6)
  │    ├── scan a
  │    │    ├── columns: a.x:1!null y:2
  │    │    ├── key: (1)
@@ -321,7 +321,7 @@ project
  │    │    ├── columns: b.x:6!null
  │    │    └── key: (6)
  │    └── filters
- │         └── a.x:1 = b.x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+ │         └── a.x:1 = b.x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
  └── projections
       └── y:2 + 1 [as=r:10, outer=(2), immutable]
 
@@ -809,7 +809,7 @@ WITH a AS (SELECT x, x FROM (VALUES (1), (2)) f(x)) SELECT * FROM a
 project
  ├── columns: x:2!null x:3!null
  ├── cardinality: [2 - 2]
- ├── fd: (2)==(3), (3)==(2)
+ ├── fd: (2)==(2,3)
  ├── values
  │    ├── columns: x:2!null
  │    ├── cardinality: [2 - 2]
@@ -916,7 +916,7 @@ SELECT x*1*1, x*1 FROM (VALUES (1), (2)) v(x)
 project
  ├── columns: "?column?":2!null "?column?":3!null
  ├── cardinality: [2 - 2]
- ├── fd: (2)==(3), (3)==(2)
+ ├── fd: (2)==(2,3)
  ├── values
  │    ├── columns: "?column?":2!null
  │    ├── cardinality: [2 - 2]
@@ -933,7 +933,7 @@ SELECT x, x*1, y, y*1, z*1 FROM (VALUES (1,2,3), (2,3,6)) v(x,y,z)
 project
  ├── columns: x:1!null "?column?":4!null y:2!null "?column?":5!null "?column?":6!null
  ├── cardinality: [2 - 2]
- ├── fd: (1)==(4), (4)==(1), (2)==(5), (5)==(2)
+ ├── fd: (1)==(1,4), (2)==(2,5)
  ├── values
  │    ├── columns: column1:1!null column2:2!null "?column?":6!null
  │    ├── cardinality: [2 - 2]
@@ -976,7 +976,7 @@ SELECT x, x*1 FROM (VALUES (1), (2)) v(x)
 project
  ├── columns: x:1!null "?column?":2!null
  ├── cardinality: [2 - 2]
- ├── fd: (1)==(2), (2)==(1)
+ ├── fd: (1)==(1,2)
  ├── values
  │    ├── columns: column1:1!null
  │    ├── cardinality: [2 - 2]

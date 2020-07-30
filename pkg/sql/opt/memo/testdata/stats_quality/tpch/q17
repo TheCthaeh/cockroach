@@ -62,7 +62,7 @@ project
  │    │    ├── lookup columns are key
  │    │    ├── immutable
  │    │    ├── stats: [rows=2008.02163, distinct(2)=199.999619, null(2)=0, distinct(5)=50, null(5)=0, distinct(6)=2005.84759, null(6)=0, distinct(18)=199.999619, null(18)=0, distinct(46)=199.999619, null(46)=0]
- │    │    ├── fd: (18)-->(46), (2)==(18), (18)==(2)
+ │    │    ├── fd: (18)-->(46), (2)==(2,18)
  │    │    ├── inner-join (lookup lineitem@l_pk)
  │    │    │    ├── save-table-name: q17_lookup_join_4
  │    │    │    ├── columns: l_orderkey:1(int!null) l_partkey:2(int!null) l_linenumber:4(int!null) p_partkey:18(int!null) "?column?":46(float!null)
@@ -70,7 +70,7 @@ project
  │    │    │    ├── immutable
  │    │    │    ├── stats: [rows=6024.06489, distinct(1)=6012.21509, null(1)=0, distinct(2)=199.999619, null(2)=0, distinct(4)=7, null(4)=0, distinct(18)=199.999619, null(18)=0, distinct(46)=199.999619, null(46)=0]
  │    │    │    ├── key: (1,4)
- │    │    │    ├── fd: (18)-->(46), (1,4)-->(2), (2)==(18), (18)==(2)
+ │    │    │    ├── fd: (18)-->(46), (1,4)-->(2), (2)==(2,18)
  │    │    │    ├── project
  │    │    │    │    ├── save-table-name: q17_project_5
  │    │    │    │    ├── columns: "?column?":46(float!null) p_partkey:18(int!null)
@@ -92,7 +92,7 @@ project
  │    │    │    │    │    │    ├── key columns: [28 31] = [28 31]
  │    │    │    │    │    │    ├── lookup columns are key
  │    │    │    │    │    │    ├── stats: [rows=6024.07637, distinct(18)=199.999619, null(18)=0, distinct(21)=1, null(21)=0, distinct(24)=1, null(24)=0, distinct(29)=199.999619, null(29)=0, distinct(32)=50, null(32)=0]
- │    │    │    │    │    │    ├── fd: ()-->(21,24), (18)==(29), (29)==(18)
+ │    │    │    │    │    │    ├── fd: ()-->(21,24), (18)==(18,29)
  │    │    │    │    │    │    ├── ordering: +(18|29) opt(21,24) [actual: +18]
  │    │    │    │    │    │    ├── inner-join (lookup lineitem@l_pk)
  │    │    │    │    │    │    │    ├── save-table-name: q17_lookup_join_8
@@ -100,7 +100,7 @@ project
  │    │    │    │    │    │    │    ├── key columns: [18] = [29]
  │    │    │    │    │    │    │    ├── stats: [rows=6024.07637, distinct(18)=199.999619, null(18)=0, distinct(21)=1, null(21)=0, distinct(24)=1, null(24)=0, distinct(28)=6012.22652, null(28)=0, distinct(29)=199.999619, null(29)=0, distinct(31)=7, null(31)=0]
  │    │    │    │    │    │    │    ├── key: (28,31)
- │    │    │    │    │    │    │    ├── fd: ()-->(21,24), (28,31)-->(29), (18)==(29), (29)==(18)
+ │    │    │    │    │    │    │    ├── fd: ()-->(21,24), (28,31)-->(29), (18)==(18,29)
  │    │    │    │    │    │    │    ├── ordering: +(18|29) opt(21,24) [actual: +18]
  │    │    │    │    │    │    │    ├── select
  │    │    │    │    │    │    │    │    ├── save-table-name: q17_select_9

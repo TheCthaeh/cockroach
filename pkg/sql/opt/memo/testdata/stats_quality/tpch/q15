@@ -66,7 +66,7 @@ project
       ├── immutable
       ├── stats: [rows=3333.33333, distinct(1)=3306.66667, null(1)=0, distinct(2)=2834.3606, null(2)=0, distinct(3)=2834.80729, null(3)=0, distinct(5)=2834.80729, null(5)=0, distinct(11)=3306.66667, null(11)=0, distinct(27)=2100.04396, null(27)=0]
       ├── key: (11)
-      ├── fd: (1)-->(2,3,5), (11)-->(27), (1)==(11), (11)==(1)
+      ├── fd: (1)-->(2,3,5), (11)-->(27), (1)==(1,11)
       ├── ordering: +(1|11) [actual: +1]
       ├── scan supplier
       │    ├── save-table-name: q15_scan_3

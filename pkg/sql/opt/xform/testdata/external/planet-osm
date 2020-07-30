@@ -1743,13 +1743,13 @@ sort
       │    ├── columns: p.highway:29!null p.way:69 l.highway:98!null l.way:140 column1:143!null column2:144!null
       │    ├── immutable
       │    ├── stats: [rows=386640.471, distinct(69)=2632.05556, null(69)=0, distinct(98)=5, null(98)=0, distinct(143)=5, null(143)=0]
-      │    ├── fd: ()-->(29), (98)==(143), (143)==(98)
+      │    ├── fd: ()-->(29), (98)==(98,143)
       │    ├── ordering: +144 opt(29,69) [actual: +144]
       │    └── inner-join (hash)
       │         ├── columns: p.highway:29!null p.way:69 l.highway:98!null l.way:140 column1:143!null column2:144!null
       │         ├── immutable
       │         ├── stats: [rows=386640.471, distinct(69)=2632.05556, null(69)=0, distinct(98)=5, null(98)=0, distinct(143)=5, null(143)=0]
-      │         ├── fd: ()-->(29), (98)==(143), (143)==(98)
+      │         ├── fd: ()-->(29), (98)==(98,143)
       │         ├── inner-join (lookup planet_osm_line)
       │         │    ├── columns: p.highway:29!null p.way:69 l.highway:98 l.way:140
       │         │    ├── key columns: [141] = [141]
@@ -1785,7 +1785,7 @@ sort
       │         │    ├── ('living_street', 4)
       │         │    └── ('service', 5)
       │         └── filters
-      │              └── column1:143 = l.highway:98 [outer=(98,143), constraints=(/98: (/NULL - ]; /143: (/NULL - ]), fd=(98)==(143), (143)==(98)]
+      │              └── column1:143 = l.highway:98 [outer=(98,143), constraints=(/98: (/NULL - ]; /143: (/NULL - ]), fd=(98)==(98,143)]
       └── aggregations
            └── first-agg [as=l.highway:98, outer=(98)]
                 └── l.highway:98

@@ -14,14 +14,14 @@ project
  ├── immutable
  ├── stats: [rows=99]
  ├── cost: 2124.745
- ├── fd: (1)==(6), (6)==(1)
+ ├── fd: (1)==(1,6)
  └── inner-join (hash)
       ├── columns: k:1!null d:4!null x:6!null
       ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
       ├── immutable
       ├── stats: [rows=99, distinct(1)=10, null(1)=0, distinct(6)=10, null(6)=0]
       ├── cost: 2123.745
-      ├── fd: ()-->(4), (1)==(6), (6)==(1)
+      ├── fd: ()-->(4), (1)==(1,6)
       ├── scan b
       │    ├── columns: x:6
       │    ├── stats: [rows=1000, distinct(6)=100, null(6)=10]
@@ -42,7 +42,7 @@ project
       │    └── filters
       │         └── d:4 = 1.0 [outer=(4), immutable, constraints=(/4: [/1.0 - /1.0]; tight), fd=()-->(4)]
       └── filters
-           └── k:1 = x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+           └── k:1 = x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
 
 # Verify that we pick merge join if we force it.
 opt
@@ -55,7 +55,7 @@ inner-join (merge)
  ├── right ordering: +6
  ├── stats: [rows=990, distinct(1)=99, null(1)=0, distinct(6)=99, null(6)=0]
  ├── cost: 2339.27569
- ├── fd: (1)==(6), (6)==(1)
+ ├── fd: (1)==(1,6)
  ├── scan a
  │    ├── columns: k:1!null
  │    ├── stats: [rows=1000, distinct(1)=1000, null(1)=0]
@@ -85,7 +85,7 @@ inner-join (lookup a)
  ├── lookup columns are key
  ├── stats: [rows=990, distinct(1)=99, null(1)=0, distinct(5)=99, null(5)=0]
  ├── cost: 7079.43
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── scan b
  │    ├── columns: x:1
  │    ├── stats: [rows=1000, distinct(1)=100, null(1)=10]
@@ -104,7 +104,7 @@ inner-join (hash)
  ├── multiplicity: left-rows(zero-or-more), right-rows(zero-or-one)
  ├── stats: [rows=990, distinct(1)=99, null(1)=0, distinct(6)=99, null(6)=0]
  ├── cost: 1e+100
- ├── fd: (1)==(6), (6)==(1)
+ ├── fd: (1)==(1,6)
  ├── scan a
  │    ├── columns: k:1!null
  │    ├── stats: [rows=1000, distinct(1)=1000, null(1)=0]
@@ -115,7 +115,7 @@ inner-join (hash)
  │    ├── stats: [rows=1000, distinct(6)=100, null(6)=10]
  │    └── cost: 1040.02
  └── filters
-      └── k:1 = x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+      └── k:1 = x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
 
 exec-ddl
 ALTER TABLE a INJECT STATISTICS '[
@@ -149,7 +149,7 @@ inner-join (lookup a)
  ├── lookup columns are key
  ├── stats: [rows=10000, distinct(1)=1000, null(1)=0, distinct(7)=1000, null(7)=0]
  ├── cost: 71500.05
- ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ ├── fd: (1)-->(2-4), (1)==(1,7)
  ├── select
  │    ├── columns: x:6!null z:7!null
  │    ├── stats: [rows=10000, distinct(6)=1000, null(6)=0, distinct(7)=1000, null(7)=0]
@@ -171,14 +171,14 @@ limit
  ├── cardinality: [0 - 6000]
  ├── stats: [rows=6000]
  ├── cost: 47200.06
- ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ ├── fd: (1)-->(2-4), (1)==(1,7)
  ├── inner-join (lookup a)
  │    ├── columns: k:1!null i:2 s:3 d:4!null x:6!null z:7!null
  │    ├── key columns: [7] = [1]
  │    ├── lookup columns are key
  │    ├── stats: [rows=10000, distinct(1)=1000, null(1)=0, distinct(7)=1000, null(7)=0]
  │    ├── cost: 47140.05
- │    ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ │    ├── fd: (1)-->(2-4), (1)==(1,7)
  │    ├── limit hint: 6000.00
  │    ├── select
  │    │    ├── columns: x:6!null z:7!null
@@ -206,14 +206,14 @@ limit
  ├── cardinality: [0 - 5950]
  ├── stats: [rows=5950]
  ├── cost: 47199.56
- ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ ├── fd: (1)-->(2-4), (1)==(1,7)
  ├── inner-join (lookup a)
  │    ├── columns: k:1!null i:2 s:3 d:4!null x:6!null z:7!null
  │    ├── key columns: [7] = [1]
  │    ├── lookup columns are key
  │    ├── stats: [rows=10000, distinct(1)=1000, null(1)=0, distinct(7)=1000, null(7)=0]
  │    ├── cost: 47140.05
- │    ├── fd: (1)-->(2-4), (1)==(7), (7)==(1)
+ │    ├── fd: (1)-->(2-4), (1)==(1,7)
  │    ├── limit hint: 5950.00
  │    ├── select
  │    │    ├── columns: x:6!null z:7!null
@@ -284,7 +284,7 @@ limit
  ├── stats: [rows=10]
  ├── cost: 2360.52
  ├── key: (1)
- ├── fd: (1)-->(2-13), (15)-->(16-24), (2)==(15), (15)==(2), (26)-->(27-35), (3)==(26), (26)==(3)
+ ├── fd: (1)-->(2-13), (15)-->(16-24), (2)==(2,15), (26)-->(27-35), (3)==(3,26)
  ├── inner-join (lookup wallet)
  │    ├── columns: t.id:1!null sender_id:2!null receiver_id:3!null amount:4!null t.creation_date:5!null last_update:6 schedule_date:7 status:8 comment:9 linked_trans_id:10 c1:11 c2:12 c3:13 s.id:15!null s.name:16!null s.gender:17 s.email:18 s.first_name:19 s.last_name:20 s.creation_date:21!null s.situation:22 s.balance:23!null s.is_blocked:24 r.id:26!null r.name:27!null r.gender:28 r.email:29 r.first_name:30 r.last_name:31 r.creation_date:32!null r.situation:33 r.balance:34!null r.is_blocked:35
  │    ├── key columns: [3] = [26]
@@ -292,7 +292,7 @@ limit
  │    ├── stats: [rows=980.1, distinct(3)=98.9950071, null(3)=0, distinct(26)=98.9950071, null(26)=0]
  │    ├── cost: 2360.41
  │    ├── key: (1)
- │    ├── fd: (1)-->(2-13), (15)-->(16-24), (2)==(15), (15)==(2), (26)-->(27-35), (3)==(26), (26)==(3)
+ │    ├── fd: (1)-->(2-13), (15)-->(16-24), (2)==(2,15), (26)-->(27-35), (3)==(3,26)
  │    ├── limit hint: 10.00
  │    ├── inner-join (lookup wallet)
  │    │    ├── columns: t.id:1!null sender_id:2!null receiver_id:3 amount:4!null t.creation_date:5!null last_update:6 schedule_date:7 status:8 comment:9 linked_trans_id:10 c1:11 c2:12 c3:13 s.id:15!null s.name:16!null s.gender:17 s.email:18 s.first_name:19 s.last_name:20 s.creation_date:21!null s.situation:22 s.balance:23!null s.is_blocked:24
@@ -301,7 +301,7 @@ limit
  │    │    ├── stats: [rows=990, distinct(1)=628.605476, null(1)=0, distinct(2)=99, null(2)=0, distinct(3)=99.9950071, null(3)=9.9, distinct(4)=99.9950071, null(4)=0, distinct(5)=99.9950071, null(5)=0, distinct(15)=99, null(15)=0, distinct(16)=99.9950071, null(16)=0, distinct(21)=99.9950071, null(21)=0, distinct(23)=99.9950071, null(23)=0]
  │    │    ├── cost: 1741.61
  │    │    ├── key: (1)
- │    │    ├── fd: (1)-->(2-13), (15)-->(16-24), (2)==(15), (15)==(2)
+ │    │    ├── fd: (1)-->(2-13), (15)-->(16-24), (2)==(2,15)
  │    │    ├── limit hint: 100.00
  │    │    ├── scan t
  │    │    │    ├── columns: t.id:1!null sender_id:2 receiver_id:3 amount:4!null t.creation_date:5!null last_update:6 schedule_date:7 status:8 comment:9 linked_trans_id:10 c1:11 c2:12 c3:13
@@ -434,7 +434,7 @@ project
       ├── key columns: [1 2 3] = [7 8 9]
       ├── stats: [rows=500.488759, distinct(1)=1, null(1)=0, distinct(2)=1, null(2)=0, distinct(3)=25, null(3)=0, distinct(7)=1, null(7)=0, distinct(8)=1, null(8)=0, distinct(9)=25, null(9)=0]
       ├── cost: 3155.08
-      ├── fd: ()-->(1,2,7,8), (1)==(7), (7)==(1), (2)==(8), (8)==(2), (3)==(9), (9)==(3)
+      ├── fd: ()-->(1,2,7,8), (1)==(1,7), (2)==(2,8), (3)==(3,9)
       ├── select
       │    ├── columns: w:1!null x:2!null y:3!null z:4!null
       │    ├── stats: [rows=100, distinct(1)=1, null(1)=0, distinct(2)=1, null(2)=0, distinct(3)=25, null(3)=0, distinct(4)=10, null(4)=0]
@@ -544,7 +544,7 @@ project
       ├── key columns: [1 2 3] = [13 14 15]
       ├── stats: [rows=4.50439883, distinct(1)=0.9, null(1)=0, distinct(2)=0.9, null(2)=0, distinct(3)=0.884031733, null(3)=0, distinct(13)=0.9, null(13)=0, distinct(14)=0.9, null(14)=0, distinct(15)=0.884031733, null(15)=0]
       ├── cost: 12227.545
-      ├── fd: ()-->(1,2,5-10,13,14), (1)==(13), (13)==(1), (2)==(14), (14)==(2), (3)==(15), (15)==(3)
+      ├── fd: ()-->(1,2,5-10,13,14), (1)==(1,13), (2)==(2,14), (3)==(3,15)
       ├── select
       │    ├── columns: w:1!null x:2!null y:3!null z:4!null i:5!null j:6!null k:7!null l:8!null m:9!null n:10!null
       │    ├── stats: [rows=0.9, distinct(1)=0.9, null(1)=0, distinct(2)=0.9, null(2)=0, distinct(3)=0.884031733, null(3)=0, distinct(4)=0.899635587, null(4)=0, distinct(5)=0.9, null(5)=0, distinct(6)=0.9, null(6)=0, distinct(7)=0.9, null(7)=0, distinct(8)=0.9, null(8)=0, distinct(9)=0.9, null(9)=0, distinct(10)=0.9, null(10)=0, distinct(5-10)=0.9, null(5-10)=0]
@@ -662,7 +662,7 @@ project
  ├── stats: [rows=10]
  ├── cost: 699.94172
  ├── key: (9)
- ├── fd: ()-->(1,2), (3)-->(4,9), (9)-->(3,4)
+ ├── fd: ()-->(1,2), (3)-->(4), (9)-->(3,4)
  ├── ordering: +9 opt(1,2) [actual: +9]
  └── limit
       ├── columns: w:1!null x:2!null y:3!null z:4!null a:6!null b:7!null c:8!null d:9!null
@@ -671,7 +671,7 @@ project
       ├── stats: [rows=10]
       ├── cost: 699.83172
       ├── key: (8)
-      ├── fd: ()-->(1,2,6,7), (3)-->(4), (8)-->(9), (9)-->(8), (1)==(6), (6)==(1), (2)==(7), (7)==(2), (3)==(8), (8)==(3)
+      ├── fd: ()-->(1,2,6,7), (3)-->(4), (8)-->(9), (9)-->(8), (1)==(1,6), (2)==(2,7), (3)==(3,8)
       ├── ordering: +9 opt(1,2,6,7) [actual: +9]
       ├── inner-join (lookup wxyz)
       │    ├── columns: w:1!null x:2!null y:3!null z:4!null a:6!null b:7!null c:8!null d:9!null
@@ -680,7 +680,7 @@ project
       │    ├── stats: [rows=50048.8759, distinct(1)=1, null(1)=0, distinct(2)=1, null(2)=0, distinct(3)=2500, null(3)=0, distinct(6)=1, null(6)=0, distinct(7)=1, null(7)=0, distinct(8)=2500, null(8)=0]
       │    ├── cost: 699.72172
       │    ├── key: (8)
-      │    ├── fd: ()-->(1,2,6,7), (3)-->(4), (8)-->(9), (9)-->(8), (1)==(6), (6)==(1), (2)==(7), (7)==(2), (3)==(8), (8)==(3)
+      │    ├── fd: ()-->(1,2,6,7), (3)-->(4), (8)-->(9), (9)-->(8), (1)==(1,6), (2)==(2,7), (3)==(3,8)
       │    ├── ordering: +9 opt(1,2,6,7) [actual: +9]
       │    ├── limit hint: 10.00
       │    ├── scan abcde@idx_abd

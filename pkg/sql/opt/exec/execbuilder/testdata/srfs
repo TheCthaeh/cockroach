@@ -103,35 +103,30 @@ query TTTTT
 EXPLAIN (VERBOSE) SELECT x, y, z, information_schema._pg_expandarray(ARRAY[x, y, z])
   FROM xy NATURAL JOIN xz WHERE y < z ORDER BY 1, 2, 3
 ----
-·                               distribution        local                                                  ·                                                ·
-·                               vectorized          true                                                   ·                                                ·
-render                          ·                   ·                                                      (x, y, z, "information_schema._pg_expandarray")  ·
- │                              render 0            x                                                      ·                                                ·
- │                              render 1            y                                                      ·                                                ·
- │                              render 2            z                                                      ·                                                ·
- │                              render 3            "information_schema._pg_expandarray"                   ·                                                ·
- └── sort                       ·                   ·                                                      ("information_schema._pg_expandarray", x, y, z)  +x
-      │                         order               +x                                                     ·                                                ·
-      └── render                ·                   ·                                                      ("information_schema._pg_expandarray", x, y, z)  ·
-           │                    render 0            ((x, n) AS x, n)                                       ·                                                ·
-           │                    render 1            x                                                      ·                                                ·
-           │                    render 2            y                                                      ·                                                ·
-           │                    render 3            z                                                      ·                                                ·
-           └── project set      ·                   ·                                                      (x, y, x, z, x, n)                               ·
-                │               render 0            information_schema._pg_expandarray(ARRAY[@1, @2, @4])  ·                                                ·
-                └── merge join  ·                   ·                                                      (x, y, x, z)                                     ·
-                     │          type                inner                                                  ·                                                ·
-                     │          equality            (x) = (x)                                              ·                                                ·
-                     │          left cols are key   ·                                                      ·                                                ·
-                     │          right cols are key  ·                                                      ·                                                ·
-                     │          mergeJoinOrder      +"(x=x)"                                               ·                                                ·
-                     │          pred                y < z                                                  ·                                                ·
-                     ├── scan   ·                   ·                                                      (x, y)                                           +x
-                     │          table               xy@primary                                             ·                                                ·
-                     │          spans               FULL SCAN                                              ·                                                ·
-                     └── scan   ·                   ·                                                      (x, z)                                           +x
-·                               table               xz@primary                                             ·                                                ·
-·                               spans               FULL SCAN                                              ·                                                ·
+·                          distribution        local                                                  ·                                                ·
+·                          vectorized          true                                                   ·                                                ·
+render                     ·                   ·                                                      (x, y, z, "information_schema._pg_expandarray")  ·
+ │                         render 0            x                                                      ·                                                ·
+ │                         render 1            y                                                      ·                                                ·
+ │                         render 2            z                                                      ·                                                ·
+ │                         render 3            ((x, n) AS x, n)                                       ·                                                ·
+ └── sort                  ·                   ·                                                      (x, y, x, z, x, n)                               +x
+      │                    order               +x                                                     ·                                                ·
+      └── project set      ·                   ·                                                      (x, y, x, z, x, n)                               ·
+           │               render 0            information_schema._pg_expandarray(ARRAY[@1, @2, @4])  ·                                                ·
+           └── merge join  ·                   ·                                                      (x, y, x, z)                                     ·
+                │          type                inner                                                  ·                                                ·
+                │          equality            (x) = (x)                                              ·                                                ·
+                │          left cols are key   ·                                                      ·                                                ·
+                │          right cols are key  ·                                                      ·                                                ·
+                │          mergeJoinOrder      +"(x=x)"                                               ·                                                ·
+                │          pred                y < z                                                  ·                                                ·
+                ├── scan   ·                   ·                                                      (x, y)                                           +x
+                │          table               xy@primary                                             ·                                                ·
+                │          spans               FULL SCAN                                              ·                                                ·
+                └── scan   ·                   ·                                                      (x, z)                                           +x
+·                          table               xz@primary                                             ·                                                ·
+·                          spans               FULL SCAN                                              ·                                                ·
 
 query TTTTT
 EXPLAIN (VERBOSE) SELECT generate_series(x, z) FROM xz WHERE z < ANY(SELECT generate_series(x, y) FROM xy)

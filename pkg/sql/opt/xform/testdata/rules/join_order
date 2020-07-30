@@ -590,11 +590,11 @@ SELECT * FROM bx, cy, dz, abc WHERE x = y AND y = z AND z = a
 inner-join (hash)
  ├── columns: b:1!null x:2!null c:4!null y:5!null d:7!null z:8!null a:10!null b:11 c:12 d:13
  ├── key: (1,4,7)
- ├── fd: (1)-->(2), (4)-->(5), (7)-->(8), (10)-->(11-13), (8)==(2,5,10), (10)==(2,5,8), (5)==(2,8,10), (2)==(5,8,10)
+ ├── fd: (1)-->(2), (4)-->(5), (7)-->(8), (10)-->(11-13), (2)==(2,5,8,10)
  ├── inner-join (hash)
  │    ├── columns: bx.b:1!null x:2!null cy.c:4!null y:5!null
  │    ├── key: (1,4)
- │    ├── fd: (1)-->(2), (4)-->(5), (2)==(5), (5)==(2)
+ │    ├── fd: (1)-->(2), (4)-->(5), (2)==(2,5)
  │    ├── scan bx
  │    │    ├── columns: bx.b:1!null x:2
  │    │    ├── key: (1)
@@ -604,12 +604,12 @@ inner-join (hash)
  │    │    ├── key: (4)
  │    │    └── fd: (4)-->(5)
  │    └── filters
- │         └── x:2 = y:5 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+ │         └── x:2 = y:5 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
  ├── inner-join (hash)
  │    ├── columns: dz.d:7!null z:8!null a:10!null abc.b:11 abc.c:12 abc.d:13
  │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
  │    ├── key: (7)
- │    ├── fd: (7)-->(8), (10)-->(11-13), (8)==(10), (10)==(8)
+ │    ├── fd: (7)-->(8), (10)-->(11-13), (8)==(8,10)
  │    ├── scan dz
  │    │    ├── columns: dz.d:7!null z:8
  │    │    ├── key: (7)
@@ -619,9 +619,9 @@ inner-join (hash)
  │    │    ├── key: (10)
  │    │    └── fd: (10)-->(11-13)
  │    └── filters
- │         └── z:8 = a:10 [outer=(8,10), constraints=(/8: (/NULL - ]; /10: (/NULL - ]), fd=(8)==(10), (10)==(8)]
+ │         └── z:8 = a:10 [outer=(8,10), constraints=(/8: (/NULL - ]; /10: (/NULL - ]), fd=(8)==(8,10)]
  └── filters
-      └── y:5 = z:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(8), (8)==(5)]
+      └── y:5 = z:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(5,8)]
 
 # Regression test for #34795.
 exec-ddl
@@ -646,12 +646,12 @@ project
  │    ├── columns: a1.id:1!null a2.id:3!null a3.id:5!null a4.id:7!null bool:11!null
  │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
  │    ├── key: (5)
- │    ├── fd: ()-->(3,7,11), (1)==(5), (5)==(1)
+ │    ├── fd: ()-->(3,7,11), (1)==(1,5)
  │    ├── inner-join (cross)
  │    │    ├── columns: a1.id:1!null a2.id:3!null a3.id:5!null bool:11!null
  │    │    ├── multiplicity: left-rows(zero-or-more), right-rows(zero-or-one)
  │    │    ├── key: (5)
- │    │    ├── fd: ()-->(3,11), (1)==(5), (5)==(1)
+ │    │    ├── fd: ()-->(3,11), (1)==(1,5)
  │    │    ├── scan a2
  │    │    │    ├── columns: a2.id:3!null
  │    │    │    ├── constraint: /3: [/1 - /1]
@@ -663,7 +663,7 @@ project
  │    │    │    ├── key columns: [1] = [5]
  │    │    │    ├── lookup columns are key
  │    │    │    ├── key: (5)
- │    │    │    ├── fd: ()-->(11), (1)==(5), (5)==(1)
+ │    │    │    ├── fd: ()-->(11), (1)==(1,5)
  │    │    │    ├── select
  │    │    │    │    ├── columns: a1.id:1!null bool:11!null
  │    │    │    │    ├── key: (1)

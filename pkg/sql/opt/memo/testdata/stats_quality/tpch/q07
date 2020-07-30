@@ -82,7 +82,7 @@ sort
       │    │    ├── columns: s_suppkey:1(int!null) s_nationkey:4(int!null) l_orderkey:9(int!null) l_suppkey:11(int!null) l_extendedprice:14(float!null) l_discount:15(float!null) l_shipdate:19(date!null) o_orderkey:26(int!null) o_custkey:27(int!null) c_custkey:36(int!null) c_nationkey:39(int!null) n1.n_nationkey:45(int!null) n1.n_name:46(char!null) n2.n_nationkey:50(int!null) n2.n_name:51(char!null)
       │    │    ├── multiplicity: left-rows(zero-or-more), right-rows(zero-or-one)
       │    │    ├── stats: [rows=7741.78379, distinct(1)=7741.78379, null(1)=0, distinct(4)=1.29975178, null(4)=0, distinct(9)=7488.03308, null(9)=0, distinct(11)=7741.78379, null(11)=0, distinct(14)=7569.91685, null(14)=0, distinct(15)=11, null(15)=0, distinct(19)=730.981616, null(19)=0, distinct(26)=7488.03308, null(26)=0, distinct(27)=4946.3467, null(27)=0, distinct(36)=4946.3467, null(36)=0, distinct(39)=1.29975178, null(39)=0, distinct(45)=1.29975178, null(45)=0, distinct(46)=1.33333333, null(46)=0, distinct(50)=1.29975178, null(50)=0, distinct(51)=1.33333333, null(51)=0, distinct(14,15)=7579.92926, null(14,15)=0, distinct(19,46,51)=974.320532, null(19,46,51)=0]
-      │    │    ├── fd: (1)-->(4), (26)-->(27), (36)-->(39), (45)-->(46), (50)-->(51), (39)==(50), (50)==(39), (27)==(36), (36)==(27), (9)==(26), (26)==(9), (1)==(11), (11)==(1), (4)==(45), (45)==(4)
+      │    │    ├── fd: (1)-->(4), (26)-->(27), (36)-->(39), (45)-->(46), (50)-->(51), (39)==(39,50), (27)==(27,36), (9)==(9,26), (1)==(1,11), (4)==(4,45)
       │    │    ├── scan customer@c_nk
       │    │    │    ├── save-table-name: q7_scan_5
       │    │    │    ├── columns: c_custkey:36(int!null) c_nationkey:39(int!null)
@@ -99,28 +99,28 @@ sort
       │    │    │    ├── key columns: [9] = [26]
       │    │    │    ├── lookup columns are key
       │    │    │    ├── stats: [rows=101372.546, distinct(1)=529.630441, null(1)=0, distinct(4)=1.29975178, null(4)=0, distinct(9)=97145.926, null(9)=0, distinct(11)=529.630441, null(11)=0, distinct(14)=62473.272, null(14)=0, distinct(15)=11, null(15)=0, distinct(19)=731, null(19)=0, distinct(26)=97145.926, null(26)=0, distinct(27)=63672.0351, null(27)=0, distinct(45)=1.29975178, null(45)=0, distinct(46)=1.33333333, null(46)=0, distinct(50)=1.29975178, null(50)=0, distinct(51)=1.33333333, null(51)=0]
-      │    │    │    ├── fd: (26)-->(27), (1)-->(4), (45)-->(46), (50)-->(51), (4)==(45), (45)==(4), (1)==(11), (11)==(1), (9)==(26), (26)==(9)
+      │    │    │    ├── fd: (26)-->(27), (1)-->(4), (45)-->(46), (50)-->(51), (4)==(4,45), (1)==(1,11), (9)==(9,26)
       │    │    │    ├── inner-join (lookup lineitem)
       │    │    │    │    ├── save-table-name: q7_lookup_join_7
       │    │    │    │    ├── columns: s_suppkey:1(int!null) s_nationkey:4(int!null) l_orderkey:9(int!null) l_suppkey:11(int!null) l_extendedprice:14(float!null) l_discount:15(float!null) l_shipdate:19(date!null) n1.n_nationkey:45(int!null) n1.n_name:46(char!null) n2.n_nationkey:50(int!null) n2.n_name:51(char!null)
       │    │    │    │    ├── key columns: [9 12] = [9 12]
       │    │    │    │    ├── lookup columns are key
       │    │    │    │    ├── stats: [rows=101372.546, distinct(1)=529.630441, null(1)=0, distinct(4)=1.29975178, null(4)=0, distinct(9)=97145.926, null(9)=0, distinct(11)=529.630441, null(11)=0, distinct(14)=95536.4092, null(14)=0, distinct(15)=11, null(15)=0, distinct(19)=731, null(19)=0, distinct(45)=1.29975178, null(45)=0, distinct(46)=1.33333333, null(46)=0, distinct(50)=1.29975178, null(50)=0, distinct(51)=1.33333333, null(51)=0]
-      │    │    │    │    ├── fd: (1)-->(4), (45)-->(46), (50)-->(51), (4)==(45), (45)==(4), (1)==(11), (11)==(1)
+      │    │    │    │    ├── fd: (1)-->(4), (45)-->(46), (50)-->(51), (4)==(4,45), (1)==(1,11)
       │    │    │    │    ├── inner-join (lookup lineitem@l_sk)
       │    │    │    │    │    ├── save-table-name: q7_lookup_join_8
       │    │    │    │    │    ├── columns: s_suppkey:1(int!null) s_nationkey:4(int!null) l_orderkey:9(int!null) l_suppkey:11(int!null) l_linenumber:12(int!null) n1.n_nationkey:45(int!null) n1.n_name:46(char!null) n2.n_nationkey:50(int!null) n2.n_name:51(char!null)
       │    │    │    │    │    ├── key columns: [1] = [11]
       │    │    │    │    │    ├── stats: [rows=322645.968, distinct(1)=529.630441, null(1)=0, distinct(4)=1.29975178, null(4)=0, distinct(9)=290856.916, null(9)=0, distinct(11)=529.630441, null(11)=0, distinct(12)=7, null(12)=0, distinct(45)=1.29975178, null(45)=0, distinct(46)=1.33333333, null(46)=0, distinct(50)=1.29975178, null(50)=0, distinct(51)=1.33333333, null(51)=0]
       │    │    │    │    │    ├── key: (9,12,50)
-      │    │    │    │    │    ├── fd: (1)-->(4), (45)-->(46), (50)-->(51), (4)==(45), (45)==(4), (9,12)-->(11), (1)==(11), (11)==(1)
+      │    │    │    │    │    ├── fd: (1)-->(4), (45)-->(46), (50)-->(51), (4)==(4,45), (9,12)-->(11), (1)==(1,11)
       │    │    │    │    │    ├── inner-join (lookup supplier@s_nk)
       │    │    │    │    │    │    ├── save-table-name: q7_lookup_join_9
       │    │    │    │    │    │    ├── columns: s_suppkey:1(int!null) s_nationkey:4(int!null) n1.n_nationkey:45(int!null) n1.n_name:46(char!null) n2.n_nationkey:50(int!null) n2.n_name:51(char!null)
       │    │    │    │    │    │    ├── key columns: [45] = [4]
       │    │    │    │    │    │    ├── stats: [rows=533.333333, distinct(1)=529.630441, null(1)=0, distinct(4)=1.29975178, null(4)=0, distinct(45)=1.29975178, null(45)=0, distinct(46)=1.33333333, null(46)=0, distinct(50)=1.29975178, null(50)=0, distinct(51)=1.33333333, null(51)=0]
       │    │    │    │    │    │    ├── key: (1,50)
-      │    │    │    │    │    │    ├── fd: (1)-->(4), (45)-->(46), (50)-->(51), (4)==(45), (45)==(4)
+      │    │    │    │    │    │    ├── fd: (1)-->(4), (45)-->(46), (50)-->(51), (4)==(4,45)
       │    │    │    │    │    │    ├── inner-join (cross)
       │    │    │    │    │    │    │    ├── save-table-name: q7_inner_join_10
       │    │    │    │    │    │    │    ├── columns: n1.n_nationkey:45(int!null) n1.n_name:46(char!null) n2.n_nationkey:50(int!null) n2.n_name:51(char!null)
@@ -151,8 +151,8 @@ sort
       │    │    │    │         └── (l_shipdate:19 >= '1995-01-01') AND (l_shipdate:19 <= '1996-12-31') [type=bool, outer=(19), constraints=(/19: [/'1995-01-01' - /'1996-12-31']; tight)]
       │    │    │    └── filters (true)
       │    │    └── filters
-      │    │         ├── c_nationkey:39 = n2.n_nationkey:50 [type=bool, outer=(39,50), constraints=(/39: (/NULL - ]; /50: (/NULL - ]), fd=(39)==(50), (50)==(39)]
-      │    │         └── c_custkey:36 = o_custkey:27 [type=bool, outer=(27,36), constraints=(/27: (/NULL - ]; /36: (/NULL - ]), fd=(27)==(36), (36)==(27)]
+      │    │         ├── c_nationkey:39 = n2.n_nationkey:50 [type=bool, outer=(39,50), constraints=(/39: (/NULL - ]; /50: (/NULL - ]), fd=(39)==(39,50)]
+      │    │         └── c_custkey:36 = o_custkey:27 [type=bool, outer=(27,36), constraints=(/27: (/NULL - ]; /36: (/NULL - ]), fd=(27)==(27,36)]
       │    └── projections
       │         ├── extract('year', l_shipdate:19) [as=l_year:55, type=float, outer=(19), immutable]
       │         └── l_extendedprice:14 * (1.0 - l_discount:15) [as=volume:56, type=float, outer=(14,15), immutable]

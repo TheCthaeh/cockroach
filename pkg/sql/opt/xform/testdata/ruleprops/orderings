@@ -266,7 +266,7 @@ SELECT * FROM abc JOIN xyz ON a=x
 inner-join (hash)
  ├── columns: a:1!null b:2 c:3 x:6!null y:7 z:8
  ├── lax-key: (2,3,6-8)
- ├── fd: (3)~~>(1,2), (6,7)~~>(8), (1)==(6), (6)==(1)
+ ├── fd: (3)~~>(1,2), (6,7)~~>(8), (1)==(1,6)
  ├── prune: (2,3,7,8)
  ├── interesting orderings: (+1,+2) (+3) (+8) (+6,+7)
  ├── scan abc
@@ -284,4 +284,4 @@ inner-join (hash)
  │    ├── interesting orderings: (+8) (+6,+7)
  │    └── unfiltered-cols: (6-10)
  └── filters
-      └── a:1 = x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+      └── a:1 = x:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]

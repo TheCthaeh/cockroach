@@ -148,11 +148,11 @@ SELECT * FROM xy WHERE x = y
 ----
 select
  ├── columns: x:1(int!null) y:2(int!null)
- ├── fd: (1)==(2), (2)==(1)
+ ├── fd: (1)==(1,2)
  ├── scan xy
  │    ├── columns: x:1(int) y:2(int)
  │    └── prune: (1,2)
  └── filters
-      └── eq [type=bool, outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ]), fd=(1)==(2), (2)==(1)]
+      └── eq [type=bool, outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ]), fd=(1)==(1,2)]
            ├── variable: x:1 [type=int]
            └── variable: y:2 [type=int]

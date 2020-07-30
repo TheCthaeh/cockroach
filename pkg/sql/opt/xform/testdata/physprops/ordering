@@ -197,7 +197,7 @@ SELECT * FROM a ORDER BY CASE WHEN false THEN x END ASC, CASE WHEN NOT false THE
 project
  ├── columns: x:1!null y:2!null z:3 s:4!null  [hidden: column7:7!null]
  ├── key: (1,2)
- ├── fd: (1,2)-->(3,4), (1)==(7), (7)==(1)
+ ├── fd: (1,2)-->(3,4), (1)==(1,7)
  ├── ordering: -(1|7) [actual: -1]
  ├── scan a,rev
  │    ├── columns: x:1!null y:2!null z:3 s:4!null
@@ -213,7 +213,7 @@ SELECT * FROM a ORDER BY CASE WHEN true THEN x END ASC, CASE WHEN NOT true THEN 
 project
  ├── columns: x:1!null y:2!null z:3 s:4!null  [hidden: column6:6!null]
  ├── key: (1,2)
- ├── fd: (1,2)-->(3,4), (1)==(6), (6)==(1)
+ ├── fd: (1,2)-->(3,4), (1)==(1,6)
  ├── ordering: +(1|6) [actual: +1]
  ├── scan a
  │    ├── columns: x:1!null y:2!null z:3 s:4!null
@@ -774,7 +774,7 @@ inner-join (merge)
  ├── left ordering: +1
  ├── right ordering: +5
  ├── key: (2,3,5-7)
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── ordering: +(1|5) [actual: +1]
  ├── scan abc
  │    ├── columns: a:1!null b:2!null c:3!null
@@ -794,7 +794,7 @@ inner-join (merge)
  ├── left ordering: +1
  ├── right ordering: +5
  ├── key: (2,3,5-7)
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── ordering: +(1|5) [actual: +1]
  ├── scan abc
  │    ├── columns: a:1!null b:2!null c:3!null
@@ -921,7 +921,7 @@ inner-join (merge)
  ├── left ordering: +1,+2
  ├── right ordering: +5,+6
  ├── key: (3,5-7)
- ├── fd: (1)==(5), (5)==(1), (2)==(6), (6)==(2)
+ ├── fd: (1)==(1,5), (2)==(2,6)
  ├── ordering: +(1|5) [actual: +1]
  ├── scan abc
  │    ├── columns: a:1!null b:2!null c:3!null
@@ -941,7 +941,7 @@ inner-join (merge)
  ├── left ordering: +1,+2
  ├── right ordering: +5,+6
  ├── key: (3,5-7)
- ├── fd: (1)==(5), (5)==(1), (2)==(6), (6)==(2)
+ ├── fd: (1)==(1,5), (2)==(2,6)
  ├── ordering: +(1|5),+(2|6) [actual: +1,+2]
  ├── scan abc
  │    ├── columns: a:1!null b:2!null c:3!null
@@ -961,7 +961,7 @@ inner-join (merge)
  ├── left ordering: +1,+2
  ├── right ordering: +5,+6
  ├── key: (3,5-7)
- ├── fd: (1)==(5), (5)==(1), (2)==(6), (6)==(2)
+ ├── fd: (1)==(1,5), (2)==(2,6)
  ├── ordering: +(1|5),+(2|6) [actual: +1,+2]
  ├── scan abc
  │    ├── columns: a:1!null b:2!null c:3!null
@@ -1431,14 +1431,14 @@ distinct-on
  ├── select
  │    ├── columns: a:1!null b:2!null c:3!null
  │    ├── key: (2,3)
- │    ├── fd: (1)==(3), (3)==(1)
+ │    ├── fd: (1)==(1,3)
  │    ├── ordering: +(1|3) [actual: +1]
  │    ├── scan abc
  │    │    ├── columns: a:1!null b:2!null c:3!null
  │    │    ├── key: (1-3)
  │    │    └── ordering: +1
  │    └── filters
- │         └── a:1 = c:3 [outer=(1,3), fd=(1)==(3), (3)==(1)]
+ │         └── a:1 = c:3 [outer=(1,3), fd=(1)==(1,3)]
  └── aggregations
       └── first-agg [as=b:2, outer=(2)]
            └── b:2
@@ -1540,13 +1540,13 @@ sort
  ├── columns: x:11!null y:12!null z:13!null
  ├── cardinality: [0 - 2]
  ├── volatile, mutations
- ├── fd: (11)==(12), (12)==(11)
+ ├── fd: (11)==(11,12)
  ├── ordering: +(11|12) [actual: +11]
  └── with &1
       ├── columns: x:11!null y:12!null z:13!null
       ├── cardinality: [0 - 2]
       ├── volatile, mutations
-      ├── fd: (11)==(12), (12)==(11)
+      ├── fd: (11)==(11,12)
       ├── insert xyz
       │    ├── columns: xyz.x:1!null xyz.y:2!null xyz.z:3!null
       │    ├── insert-mapping:
@@ -1561,7 +1561,7 @@ sort
       └── select
            ├── columns: x:11!null y:12!null z:13!null
            ├── cardinality: [0 - 2]
-           ├── fd: (11)==(12), (12)==(11)
+           ├── fd: (11)==(11,12)
            ├── with-scan &1
            │    ├── columns: x:11!null y:12!null z:13!null
            │    ├── mapping:
@@ -1570,7 +1570,7 @@ sort
            │    │    └──  xyz.z:3 => z:13
            │    └── cardinality: [0 - 2]
            └── filters
-                └── x:11 = y:12 [outer=(11,12), fd=(11)==(12), (12)==(11)]
+                └── x:11 = y:12 [outer=(11,12), fd=(11)==(11,12)]
 
 # Ignore internal ordering.
 opt
@@ -1711,13 +1711,13 @@ sort
  ├── columns: a:14 b:15!null c:16!null d:17
  ├── cardinality: [0 - 10]
  ├── volatile, mutations
- ├── fd: (15)==(16), (16)==(15)
+ ├── fd: (15)==(15,16)
  ├── ordering: +(15|16),+17 [actual: +15,+17]
  └── with &1
       ├── columns: a:14 b:15!null c:16!null d:17
       ├── cardinality: [0 - 10]
       ├── volatile, mutations
-      ├── fd: (15)==(16), (16)==(15)
+      ├── fd: (15)==(15,16)
       ├── project
       │    ├── columns: abcd.a:1 abcd.b:2 abcd.c:3 abcd.d:4
       │    ├── cardinality: [0 - 10]
@@ -1747,7 +1747,7 @@ sort
       └── select
            ├── columns: a:14 b:15!null c:16!null d:17
            ├── cardinality: [0 - 10]
-           ├── fd: (15)==(16), (16)==(15)
+           ├── fd: (15)==(15,16)
            ├── with-scan &1
            │    ├── columns: a:14 b:15 c:16 d:17
            │    ├── mapping:
@@ -1757,7 +1757,7 @@ sort
            │    │    └──  abcd.d:4 => d:17
            │    └── cardinality: [0 - 10]
            └── filters
-                └── b:15 = c:16 [outer=(15,16), fd=(15)==(16), (16)==(15)]
+                └── b:15 = c:16 [outer=(15,16), fd=(15)==(15,16)]
 
 # --------------------------------------------------
 # Upsert operator.
@@ -1936,13 +1936,13 @@ sort
  ├── columns: a:13 b:14!null c:15!null d:16
  ├── cardinality: [0 - 10]
  ├── volatile, mutations
- ├── fd: (14)==(15), (15)==(14)
+ ├── fd: (14)==(14,15)
  ├── ordering: +(14|15),+16 [actual: +14,+16]
  └── with &1
       ├── columns: a:13 b:14!null c:15!null d:16
       ├── cardinality: [0 - 10]
       ├── volatile, mutations
-      ├── fd: (14)==(15), (15)==(14)
+      ├── fd: (14)==(14,15)
       ├── project
       │    ├── columns: abcd.a:1 abcd.b:2 abcd.c:3 abcd.d:4
       │    ├── cardinality: [0 - 10]
@@ -1962,7 +1962,7 @@ sort
       └── select
            ├── columns: a:13 b:14!null c:15!null d:16
            ├── cardinality: [0 - 10]
-           ├── fd: (14)==(15), (15)==(14)
+           ├── fd: (14)==(14,15)
            ├── with-scan &1
            │    ├── columns: a:13 b:14 c:15 d:16
            │    ├── mapping:
@@ -1972,7 +1972,7 @@ sort
            │    │    └──  abcd.d:4 => d:16
            │    └── cardinality: [0 - 10]
            └── filters
-                └── b:14 = c:15 [outer=(14,15), fd=(14)==(15), (15)==(14)]
+                └── b:14 = c:15 [outer=(14,15), fd=(14)==(14,15)]
 
 
 # Regression test for #36219: lookup join with ON condition that imposes an
@@ -1985,7 +1985,7 @@ inner-join (merge)
  ├── left ordering: +1
  ├── right ordering: +5
  ├── key: (2,3,6,7)
- ├── fd: (1)==(5,7), (5)==(1,7), (7)==(1,5)
+ ├── fd: (1)==(1,5,7)
  ├── ordering: +(1|5|7) [actual: +1]
  ├── scan abc
  │    ├── columns: a:1!null b:2!null c:3!null
@@ -1996,7 +1996,7 @@ inner-join (merge)
  │    ├── key: (5-7)
  │    └── ordering: +5
  └── filters
-      └── x:5 = z:7 [outer=(5,7), fd=(5)==(7), (7)==(5)]
+      └── x:5 = z:7 [outer=(5,7), fd=(5)==(5,7)]
 
 # TODO(justin): figure out when it is that window functions can preserve their
 # input ordering.
@@ -2043,17 +2043,17 @@ distinct-on
       ├── columns: a:1!null b:4!null c:7!null d:8!null
       ├── flags: force lookup join (into right side)
       ├── key columns: [11 1] = [7 8]
-      ├── fd: ()-->(7), (1)==(4,8), (4)==(1,8), (8)==(1,4)
+      ├── fd: ()-->(7), (1)==(1,4,8)
       ├── ordering: +(1|4|8) opt(7) [actual: +1]
       ├── project
       │    ├── columns: "project_const_col_@7":11!null a:1!null b:4!null
-      │    ├── fd: ()-->(11), (1)==(4), (4)==(1)
+      │    ├── fd: ()-->(11), (1)==(1,4)
       │    ├── ordering: +(1|4) [actual: +1]
       │    ├── inner-join (lookup t44469_b@secondary)
       │    │    ├── columns: a:1!null b:4!null
       │    │    ├── flags: force lookup join (into right side)
       │    │    ├── key columns: [1] = [4]
-      │    │    ├── fd: (1)==(4), (4)==(1)
+      │    │    ├── fd: (1)==(1,4)
       │    │    ├── ordering: +(1|4) [actual: +1]
       │    │    ├── scan t44469_a@secondary
       │    │    │    ├── columns: a:1

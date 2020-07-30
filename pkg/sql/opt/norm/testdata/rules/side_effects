@@ -79,7 +79,7 @@ inner-join (hash)
  ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
  ├── volatile
  ├── key: (7)
- ├── fd: (1)-->(2-5), (7)-->(8), (1)==(7), (7)==(1)
+ ├── fd: (1)-->(2-5), (7)-->(8), (1)==(1,7)
  ├── select
  │    ├── columns: k:1!null i:2 f:3 s:4 j:5
  │    ├── volatile
@@ -103,7 +103,7 @@ inner-join (hash)
  │    └── filters
  │         └── x:7 = random() [outer=(7), volatile, constraints=(/7: (/NULL - ])]
  └── filters
-      └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+      └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
 
 # Decorrelate CASE WHEN branch if there are no side effects.
 norm
@@ -122,7 +122,7 @@ project
  │    │    ├── key: (7)
  │    │    └── fd: (7)-->(8)
  │    └── filters
- │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+ │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
  └── projections
       └── CASE WHEN i:2 < 0 THEN y:8 ELSE 5 END [as=case:10, outer=(2,8)]
 
@@ -152,7 +152,7 @@ project
       │    │    ├── key: (7)
       │    │    └── fd: (7)-->(8)
       │    └── filters
-      │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+      │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
       └── filters
            └── k:1 = CASE WHEN i:2 < 0 THEN 5 ELSE y:8 END [outer=(1,2,8), constraints=(/1: (/NULL - ])]
 
@@ -196,7 +196,7 @@ project
            │                   │    │    ├── key: (7)
            │                   │    │    └── fd: (7)-->(8)
            │                   │    └── filters
-           │                   │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+           │                   │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
            │                   └── (random() * 10.0)::INT8
            └── 5
 
@@ -241,7 +241,7 @@ select
                                │    ├── key: (7)
                                │    └── fd: (7)-->(8)
                                └── filters
-                                    ├── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+                                    ├── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
                                     └── (5 / y:8) > 1 [outer=(8), immutable]
 
 
@@ -284,7 +284,7 @@ select
                                │    │    ├── key: (7)
                                │    │    └── fd: (7)-->(8)
                                │    └── filters
-                               │         ├── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+                               │         ├── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
                                │         └── (5 / xy.y:8) > 1 [outer=(8), immutable]
                                └── projections
                                     └── xy.y:8::DECIMAL [as=y:10, outer=(8), immutable]
@@ -317,6 +317,6 @@ project
       │    │    ├── key: (7)
       │    │    └── fd: (7)-->(8)
       │    └── filters
-      │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+      │         └── x:7 = i:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
       └── filters
            └── k:1 = IFERROR((1 / 0)::INT8, y:8) [outer=(1,8), immutable, constraints=(/1: (/NULL - ])]

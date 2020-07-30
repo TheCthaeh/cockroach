@@ -102,7 +102,7 @@ SimplifyJoinFilters
   -      ├── fd: ()-->(2), (1)-->(3-6), (3,4)~~>(1,5,6), (7)-->(8,9)
   +      ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
   +      ├── key: (7)
-  +      ├── fd: ()-->(2), (1)-->(3-6), (3,4)~~>(1,5,6), (7)-->(8,9), (1)==(7), (7)==(1)
+  +      ├── fd: ()-->(2), (1)-->(3-6), (3,4)~~>(1,5,6), (7)-->(8,9), (1)==(1,7)
          ├── scan a
          │    ├── columns: k:1!null i:2 f:3 s:4 j:5 a.crdb_internal_mvcc_timestamp:6
          │    ├── key: (1)
@@ -113,7 +113,7 @@ SimplifyJoinFilters
          │    └── fd: (7)-->(8,9)
          └── filters
   -           └── (k:1 = x:7) AND (i:2 = 9) [outer=(1,2,7), constraints=(/1: (/NULL - ]; /2: [/9 - /9]; /7: (/NULL - ]), fd=()-->(2)]
-  +           ├── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+  +           ├── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
   +           └── i:2 = 9 [outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
 ================================================================================
 PushFilterIntoJoinLeft
@@ -125,7 +125,7 @@ PushFilterIntoJoinLeft
          ├── columns: k:1!null i:2!null f:3 s:4 j:5 a.crdb_internal_mvcc_timestamp:6 x:7!null y:8 xy.crdb_internal_mvcc_timestamp:9
          ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(3-6), (3,4)~~>(1,5,6), (7)-->(8,9), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(3-6), (3,4)~~>(1,5,6), (7)-->(8,9), (1)==(1,7)
   -      ├── scan a
   -      │    ├── columns: k:1!null i:2 f:3 s:4 j:5 a.crdb_internal_mvcc_timestamp:6
   +      ├── select
@@ -144,9 +144,9 @@ PushFilterIntoJoinLeft
          │    ├── key: (7)
          │    └── fd: (7)-->(8,9)
          └── filters
-  -           ├── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+  -           ├── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
   -           └── i:2 = 9 [outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
-  +           └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+  +           └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
 ================================================================================
 PruneJoinLeftCols
   Cost: 2188.03
@@ -158,10 +158,10 @@ PruneJoinLeftCols
   +      ├── columns: k:1!null i:2!null s:4 x:7!null y:8 xy.crdb_internal_mvcc_timestamp:9
          ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
          ├── key: (7)
-  -      ├── fd: ()-->(2), (1)-->(3-6), (3,4)~~>(1,5,6), (7)-->(8,9), (1)==(7), (7)==(1)
+  -      ├── fd: ()-->(2), (1)-->(3-6), (3,4)~~>(1,5,6), (7)-->(8,9), (1)==(1,7)
   -      ├── select
   -      │    ├── columns: k:1!null i:2!null f:3 s:4 j:5 a.crdb_internal_mvcc_timestamp:6
-  +      ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(7), (7)==(1)
+  +      ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(1,7)
   +      ├── project
   +      │    ├── columns: k:1!null i:2!null s:4
          │    ├── key: (1)
@@ -188,7 +188,7 @@ PruneJoinLeftCols
          │    ├── key: (7)
          │    └── fd: (7)-->(8,9)
          └── filters
-              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
 ================================================================================
 PruneSelectCols
   Cost: 2158.03
@@ -199,7 +199,7 @@ PruneSelectCols
          ├── columns: k:1!null i:2!null s:4 x:7!null y:8 xy.crdb_internal_mvcc_timestamp:9
          ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(1,7)
          ├── project
          │    ├── columns: k:1!null i:2!null s:4
          │    ├── key: (1)
@@ -223,7 +223,7 @@ PruneSelectCols
          │    ├── key: (7)
          │    └── fd: (7)-->(8,9)
          └── filters
-              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
 ================================================================================
 EliminateProject
   Cost: 2157.91
@@ -234,7 +234,7 @@ EliminateProject
          ├── columns: k:1!null i:2!null s:4 x:7!null y:8 xy.crdb_internal_mvcc_timestamp:9
          ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(1,7)
   -      ├── project
   +      ├── select
          │    ├── columns: k:1!null i:2!null s:4
@@ -261,7 +261,7 @@ EliminateProject
          │    ├── key: (7)
          │    └── fd: (7)-->(8,9)
          └── filters
-              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
 ================================================================================
 PruneJoinRightCols
   Cost: 2137.91
@@ -273,8 +273,8 @@ PruneJoinRightCols
   +      ├── columns: k:1!null i:2!null s:4 x:7!null
          ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
          ├── key: (7)
-  -      ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(7), (7)==(1)
-  +      ├── fd: ()-->(2), (1)-->(4), (1)==(7), (7)==(1)
+  -      ├── fd: ()-->(2), (1)-->(4), (7)-->(8,9), (1)==(1,7)
+  +      ├── fd: ()-->(2), (1)-->(4), (1)==(1,7)
          ├── select
          │    ├── columns: k:1!null i:2!null s:4
          │    ├── key: (1)
@@ -292,7 +292,7 @@ PruneJoinRightCols
   +      │    ├── columns: x:7!null
   +      │    └── key: (7)
          └── filters
-              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
 --------------------------------------------------------------------------------
 GenerateIndexScans (no changes)
 --------------------------------------------------------------------------------
@@ -318,7 +318,7 @@ CommuteJoin
          ├── columns: k:1!null i:2!null s:4 x:7!null
          ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(4), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (1)==(1,7)
   +      ├── scan xy
   +      │    ├── columns: x:7!null
   +      │    └── key: (7)
@@ -336,7 +336,7 @@ CommuteJoin
   -      │    ├── columns: x:7!null
   -      │    └── key: (7)
          └── filters
-              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+              └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
 ================================================================================
 GenerateMergeJoins
   Cost: 2130.38
@@ -350,7 +350,7 @@ GenerateMergeJoins
   +      ├── left ordering: +1
   +      ├── right ordering: +7
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(4), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (1)==(1,7)
   -      ├── scan xy
   -      │    ├── columns: x:7!null
   -      │    └── key: (7)
@@ -368,7 +368,7 @@ GenerateMergeJoins
          │    └── filters
          │         └── i:2 = 9 [outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
   -      └── filters
-  -           └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+  -           └── k:1 = x:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
   +      ├── scan xy
   +      │    ├── columns: x:7!null
   +      │    ├── key: (7)
@@ -388,7 +388,7 @@ GenerateLookupJoins
   +      ├── key columns: [1] = [7]
   +      ├── lookup columns are key
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(4), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (1)==(1,7)
          ├── select
          │    ├── columns: k:1!null i:2!null s:4
          │    ├── key: (1)
@@ -423,7 +423,7 @@ GenerateMergeJoins (higher cost)
   +      ├── left ordering: +7
   +      ├── right ordering: +1
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(4), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (1)==(1,7)
   +      ├── scan xy
   +      │    ├── columns: x:7!null
   +      │    ├── key: (7)
@@ -455,7 +455,7 @@ GenerateLookupJoinsWithFilter (higher cost)
   +      ├── key columns: [7] = [1]
   +      ├── lookup columns are key
          ├── key: (7)
-         ├── fd: ()-->(2), (1)-->(4), (1)==(7), (7)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (1)==(1,7)
          ├── scan xy
          │    ├── columns: x:7!null
   -      │    ├── key: (7)
@@ -487,7 +487,7 @@ Final best expression
         ├── key columns: [1] = [7]
         ├── lookup columns are key
         ├── key: (7)
-        ├── fd: ()-->(2), (1)-->(4), (1)==(7), (7)==(1)
+        ├── fd: ()-->(2), (1)-->(4), (1)==(1,7)
         ├── select
         │    ├── columns: k:1!null i:2!null s:4
         │    ├── key: (1)
@@ -664,7 +664,7 @@ Initial expression
                             │    ├── key: (7)
                             │    └── fd: (7)-->(8,9)
                             └── filters
-                                 └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+                                 └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 ================================================================================
 PruneSelectCols
   Cost: 2183.33
@@ -702,7 +702,7 @@ PruneSelectCols
   -                          │    └── fd: (7)-->(8,9)
   +                          │    └── fd: (7)-->(8)
                              └── filters
-                                  └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+                                  └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 ================================================================================
 EliminateProject
   Cost: 2173.42
@@ -737,13 +737,13 @@ EliminateProject
   -                          │    ├── key: (7)
   -                          │    └── fd: (7)-->(8)
   -                          └── filters
-  -                               └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  -                               └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
   +                     ├── scan xy
   +                     │    ├── columns: x:7!null y:8
   +                     │    ├── key: (7)
   +                     │    └── fd: (7)-->(8)
   +                     └── filters
-  +                          └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  +                          └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 ================================================================================
 HoistSelectExists
   Cost: 12109.92
@@ -773,7 +773,7 @@ HoistSelectExists
   -                     │    ├── key: (7)
   -                     │    └── fd: (7)-->(8)
   -                     └── filters
-  -                          └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  -                          └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
   +      │    ├── fd: (1)-->(2-6), (3,4)~~>(1,2,5,6)
   +      │    ├── scan a
   +      │    │    ├── columns: k:1!null i:2 f:3 s:4 j:5 a.crdb_internal_mvcc_timestamp:6
@@ -789,7 +789,7 @@ HoistSelectExists
   +      │    │    │    ├── key: (7)
   +      │    │    │    └── fd: (7)-->(8)
   +      │    │    └── filters
-  +      │    │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  +      │    │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
   +      │    └── filters (true)
   +      └── filters (true)
 ================================================================================
@@ -827,11 +827,11 @@ TryDecorrelateSelect
   -      │    │    │    ├── key: (7)
   -      │    │    │    └── fd: (7)-->(8)
   -      │    │    └── filters
-  -      │    │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  -      │    │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
   -      │    └── filters (true)
   +      │    │    └── fd: (7)-->(8)
   +      │    └── filters
-  +      │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  +      │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
          └── filters (true)
 ================================================================================
 DecorrelateJoin
@@ -862,7 +862,7 @@ DecorrelateJoin
          │    │    ├── key: (7)
          │    │    └── fd: (7)-->(8)
          │    └── filters
-         │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+         │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
          └── filters (true)
 ================================================================================
 PruneSemiAntiJoinRightCols
@@ -890,7 +890,7 @@ PruneSemiAntiJoinRightCols
   -      │    │    └── fd: (7)-->(8)
   +      │    │    └── columns: y:8
          │    └── filters
-         │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+         │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
          └── filters (true)
 ================================================================================
 EliminateSelect
@@ -917,13 +917,13 @@ EliminateSelect
   -      │    ├── scan xy
   -      │    │    └── columns: y:8
   -      │    └── filters
-  -      │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  -      │         └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
   -      └── filters (true)
   +      │    └── fd: (1)-->(2-6), (3,4)~~>(1,2,5,6)
   +      ├── scan xy
   +      │    └── columns: y:8
   +      └── filters
-  +           └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  +           └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 ================================================================================
 PruneJoinLeftCols
   Cost: 2268.08
@@ -947,7 +947,7 @@ PruneJoinLeftCols
          ├── scan xy
          │    └── columns: y:8
          └── filters
-              └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+              └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 ================================================================================
 EliminateProject
   Cost: 2258.07
@@ -968,7 +968,7 @@ EliminateProject
   -      ├── scan xy
   -      │    └── columns: y:8
   -      └── filters
-  -           └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  -           └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
   + ├── scan a
   + │    ├── columns: k:1!null i:2 f:3 s:4 j:5
   + │    ├── key: (1)
@@ -976,7 +976,7 @@ EliminateProject
   + ├── scan xy
   + │    └── columns: y:8
   + └── filters
-  +      └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  +      └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 --------------------------------------------------------------------------------
 GenerateIndexScans (no changes)
 --------------------------------------------------------------------------------
@@ -999,12 +999,12 @@ CommuteSemiJoin
   - ├── scan xy
   - │    └── columns: y:8
   - └── filters
-  -      └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  -      └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
   + └── inner-join (hash)
   +      ├── columns: k:1!null i:2!null f:3 s:4 j:5 y:8!null
   +      ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
   +      ├── key: (1)
-  +      ├── fd: (1)-->(2-5), (3,4)~~>(1,2,5), (2)==(8), (8)==(2)
+  +      ├── fd: (1)-->(2-5), (3,4)~~>(1,2,5), (2)==(2,8)
   +      ├── scan a
   +      │    ├── columns: k:1!null i:2 f:3 s:4 j:5
   +      │    ├── key: (1)
@@ -1016,7 +1016,7 @@ CommuteSemiJoin
   +      │    └── scan xy
   +      │         └── columns: y:8
   +      └── filters
-  +           └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+  +           └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 --------------------------------------------------------------------------------
 GenerateMergeJoins (no changes)
 --------------------------------------------------------------------------------
@@ -1053,7 +1053,7 @@ Final best expression
         ├── columns: k:1!null i:2!null f:3 s:4 j:5 y:8!null
         ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
         ├── key: (1)
-        ├── fd: (1)-->(2-5), (3,4)~~>(1,2,5), (2)==(8), (8)==(2)
+        ├── fd: (1)-->(2-5), (3,4)~~>(1,2,5), (2)==(2,8)
         ├── scan a
         │    ├── columns: k:1!null i:2 f:3 s:4 j:5
         │    ├── key: (1)
@@ -1065,7 +1065,7 @@ Final best expression
         │    └── scan xy
         │         └── columns: y:8
         └── filters
-             └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+             └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
 
 # Decorrelation pattern using ANY function.
 optsteps
@@ -1100,7 +1100,7 @@ Initial expression
              │         │    ├── key: (4)
              │         │    └── fd: (4)-->(5-9), (6,7)~~>(4,5,8,9)
              │         └── filters
-             │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+             │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
              └── 5
 ================================================================================
 PruneSelectCols
@@ -1135,7 +1135,7 @@ PruneSelectCols
   -           │         │    └── fd: (4)-->(5-9), (6,7)~~>(4,5,8,9)
   +           │         │    └── fd: (4)-->(5)
               │         └── filters
-              │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+              │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
               └── 5
 ================================================================================
 PruneScanCols
@@ -1168,7 +1168,7 @@ PruneScanCols
               │         │    ├── key: (4)
               │         │    └── fd: (4)-->(5)
               │         └── filters
-              │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+              │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
               └── 5
 ================================================================================
 HoistProjectSubquery
@@ -1227,7 +1227,7 @@ HoistProjectSubquery
   + │    │    │    │    │    │         │    ├── key: (4)
   + │    │    │    │    │    │         │    └── fd: (4)-->(5)
   + │    │    │    │    │    │         └── filters
-  + │    │    │    │    │    │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │    │    │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │    │    └── filters
   + │    │    │    │    │         └── (5 = i:5) IS NOT false [outer=(5)]
   + │    │    │    │    └── projections
@@ -1257,7 +1257,7 @@ HoistProjectSubquery
   -           │         │    ├── key: (4)
   -           │         │    └── fd: (4)-->(5)
   -           │         └── filters
-  -           │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  -           │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   -           └── 5
   +      └── case:13 [as=r:10, outer=(13)]
 ================================================================================
@@ -1314,7 +1314,7 @@ CommuteVar
     │    │    │    │    │    │         │    ├── key: (4)
     │    │    │    │    │    │         │    └── fd: (4)-->(5)
     │    │    │    │    │    │         └── filters
-    │    │    │    │    │    │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │    │    │    │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │    │    └── filters
   - │    │    │    │    │         └── (5 = i:5) IS NOT false [outer=(5)]
   + │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
@@ -1391,9 +1391,9 @@ PushSelectIntoProject
   + │    │    │    │    │    │         │    │    ├── key: (4)
   + │    │    │    │    │    │         │    │    └── fd: (4)-->(5)
   + │    │    │    │    │    │         │    └── filters
-  + │    │    │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │    │    │         └── filters
-  - │    │    │    │    │    │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │    │    │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │    │    └── filters
   - │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
   + │    │    │    │    │    │              └── (i:5 = 5) IS NOT false [outer=(5)]
@@ -1469,11 +1469,11 @@ MergeSelects
   - │    │    │    │    │    │         │    │    ├── key: (4)
   - │    │    │    │    │    │         │    │    └── fd: (4)-->(5)
   - │    │    │    │    │    │         │    └── filters
-  - │    │    │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │    │    │         │    ├── key: (4)
   + │    │    │    │    │    │         │    └── fd: (4)-->(5)
     │    │    │    │    │    │         └── filters
-  + │    │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │    │    │              └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │    │    └── filters (true)
     │    │    │    │    └── projections
@@ -1541,7 +1541,7 @@ EliminateSelect
   - │    │    │    │    │    │         │    ├── key: (4)
   - │    │    │    │    │    │         │    └── fd: (4)-->(5)
   - │    │    │    │    │    │         └── filters
-  - │    │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │    │    │              └── (i:5 = 5) IS NOT false [outer=(5)]
   - │    │    │    │    │    └── filters (true)
   + │    │    │    │    │    └── select
@@ -1555,7 +1555,7 @@ EliminateSelect
   + │    │    │    │    │         │    ├── key: (4)
   + │    │    │    │    │         │    └── fd: (4)-->(5)
   + │    │    │    │    │         └── filters
-  + │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │    │              └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │    └── projections
     │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1617,7 +1617,7 @@ MergeProjects
   - │    │    │    │    │         │    ├── key: (4)
   - │    │    │    │    │         │    └── fd: (4)-->(5)
   - │    │    │    │    │         └── filters
-  - │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │    │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │    │              └── (i:5 = 5) IS NOT false [outer=(5)]
   + │    │    │    │    │    ├── fd: ()-->(4,5)
   + │    │    │    │    │    ├── scan a
@@ -1625,7 +1625,7 @@ MergeProjects
   + │    │    │    │    │    │    ├── key: (4)
   + │    │    │    │    │    │    └── fd: (4)-->(5)
   + │    │    │    │    │    └── filters
-  + │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │    └── projections
     │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1679,7 +1679,7 @@ FoldNonNullIsNotNull
     │    │    │    │    │    │    ├── key: (4)
     │    │    │    │    │    │    └── fd: (4)-->(5)
     │    │    │    │    │    └── filters
-    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │    └── projections
     │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1734,7 +1734,7 @@ SimplifyAndTrue
     │    │    │    │    │    │    ├── key: (4)
     │    │    │    │    │    │    └── fd: (4)-->(5)
     │    │    │    │    │    └── filters
-    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │    └── projections
     │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1808,7 +1808,7 @@ TryDecorrelateProject
   - │    │    │    │    │    │    ├── key: (4)
   - │    │    │    │    │    │    └── fd: (4)-->(5)
   - │    │    │    │    │    └── filters
-  - │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
   - │    │    │    │    └── projections
   - │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1824,7 +1824,7 @@ TryDecorrelateProject
   + │    │    │    │    │    │    │    ├── key: (4)
   + │    │    │    │    │    │    │    └── fd: (4)-->(5)
   + │    │    │    │    │    │    └── filters
-  + │    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
   + │    │    │    │    │    └── projections
   + │    │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1882,7 +1882,7 @@ TryDecorrelateScalarGroupBy
   - │    │    │    │    │    │    │    ├── key: (4)
   - │    │    │    │    │    │    │    └── fd: (4)-->(5)
   - │    │    │    │    │    │    └── filters
-  - │    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
   - │    │    │    │    │    └── projections
   - │    │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1922,7 +1922,7 @@ TryDecorrelateScalarGroupBy
   + │    │    │    │         │    │    │    │    ├── key: (4)
   + │    │    │    │         │    │    │    │    └── fd: (4)-->(5)
   + │    │    │    │         │    │    │    └── filters
-  + │    │    │    │         │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │         │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │         │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
   + │    │    │    │         │    │    └── projections
   + │    │    │    │         │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -1988,7 +1988,7 @@ TryDecorrelateProjectSelect
   - │    │    │    │         │    │    │    │    ├── key: (4)
   - │    │    │    │         │    │    │    │    └── fd: (4)-->(5)
   - │    │    │    │         │    │    │    └── filters
-  - │    │    │    │         │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │         │    │    │         ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │         │    │    │         └── (i:5 = 5) IS NOT false [outer=(5)]
   - │    │    │    │         │    │    └── projections
   - │    │    │    │         │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
@@ -2011,7 +2011,7 @@ TryDecorrelateProjectSelect
   + │    │    │    │         │         │    └── projections
   + │    │    │    │         │         │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   + │    │    │    │         │         └── filters
-  + │    │    │    │         │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │         │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │         │              └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │         └── aggregations
     │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
@@ -2074,7 +2074,7 @@ DecorrelateJoin
     │    │    │    │         │         │    └── projections
     │    │    │    │         │         │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
     │    │    │    │         │         └── filters
-    │    │    │    │         │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │    │         │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │         │              └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │         └── aggregations
     │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
@@ -2148,9 +2148,9 @@ PushFilterIntoJoinRight
   + │    │    │    │         │         │    └── filters
   + │    │    │    │         │         │         └── (i:5 = 5) IS NOT false [outer=(5)]
     │    │    │    │         │         └── filters
-  - │    │    │    │         │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │         │              ├── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │         │              └── (i:5 = 5) IS NOT false [outer=(5)]
-  + │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │         └── aggregations
     │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
     │    │    │    │                   └── notnull:11
@@ -2225,7 +2225,7 @@ PushSelectIntoProject
   - │    │    │    │         │         │         └── (i:5 = 5) IS NOT false [outer=(5)]
   + │    │    │    │         │         │    └── filters (true)
     │    │    │    │         │         └── filters
-    │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │         └── aggregations
     │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
     │    │    │    │                   └── notnull:11
@@ -2307,7 +2307,7 @@ EliminateSelect
   + │    │    │    │         │         │    └── projections
   + │    │    │    │         │         │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
     │    │    │    │         │         └── filters
-    │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │         └── aggregations
     │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
     │    │    │    │                   └── notnull:11
@@ -2377,7 +2377,7 @@ PruneJoinRightCols
     │    │    │    │         │         │    └── projections
     │    │    │    │         │         │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
     │    │    │    │         │         └── filters
-    │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │         └── aggregations
     │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
     │    │    │    │                   └── notnull:11
@@ -2446,7 +2446,7 @@ EliminateGroupByProject
   - │    │    │    │         │         │    └── projections
   - │    │    │    │         │         │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   - │    │    │    │         │         └── filters
-  - │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │         │              └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │         │    ├── fd: (4)-->(11), (1)-->(4,11)
   + │    │    │    │         │    ├── scan xy
   + │    │    │    │         │    │    ├── columns: x:1!null
@@ -2468,7 +2468,7 @@ EliminateGroupByProject
   + │    │    │    │         │    │    └── projections
   + │    │    │    │         │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   + │    │    │    │         │    └── filters
-  + │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    │    │         └── aggregations
     │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
     │    │    │    │                   └── notnull:11
@@ -2532,7 +2532,7 @@ EliminateProject
   - │    │    │    │         │    │    └── projections
   - │    │    │    │         │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   - │    │    │    │         │    └── filters
-  - │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │         │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │         └── aggregations
   - │    │    │    │              └── bool-or [as=bool_or:12, outer=(11)]
   - │    │    │    │                   └── notnull:11
@@ -2561,7 +2561,7 @@ EliminateProject
   + │    │    │    │    │    │    └── projections
   + │    │    │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   + │    │    │    │    │    └── filters
-  + │    │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    │    └── aggregations
   + │    │    │    │         └── bool-or [as=bool_or:12, outer=(11)]
   + │    │    │    │              └── notnull:11
@@ -2636,7 +2636,7 @@ EliminateSelect
   - │    │    │    │    │    │    └── projections
   - │    │    │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   - │    │    │    │    │    └── filters
-  - │    │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    │    └── aggregations
   - │    │    │    │         └── bool-or [as=bool_or:12, outer=(11)]
   - │    │    │    │              └── notnull:11
@@ -2647,7 +2647,7 @@ EliminateSelect
   + │    │    │    │    │    └── projections
   + │    │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   + │    │    │    │    └── filters
-  + │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    │    └── aggregations
   + │    │    │         └── bool-or [as=bool_or:12, outer=(11)]
   + │    │    │              └── notnull:11
@@ -2721,7 +2721,7 @@ EliminateSelect
   - │    │    │    │    │    └── projections
   - │    │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   - │    │    │    │    └── filters
-  - │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    │    └── aggregations
   - │    │    │         └── bool-or [as=bool_or:12, outer=(11)]
   - │    │    │              └── notnull:11
@@ -2734,7 +2734,7 @@ EliminateSelect
   + │    │    │    │    └── projections
   + │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   + │    │    │    └── filters
-  + │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    └── aggregations
   + │    │         └── bool-or [as=bool_or:12, outer=(11)]
   + │    │              └── notnull:11
@@ -2783,7 +2783,7 @@ PruneProjectCols
     │    │    │    │    └── projections
     │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
     │    │    │    └── filters
-    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    │    └── aggregations
     │    │         └── bool-or [as=bool_or:12, outer=(11)]
     │    │              └── notnull:11
@@ -2849,7 +2849,7 @@ InlineProjectInProject
   - │    │    │    │    └── projections
   - │    │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   - │    │    │    └── filters
-  - │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   - │    │    └── aggregations
   - │    │         └── bool-or [as=bool_or:12, outer=(11)]
   - │    │              └── notnull:11
@@ -2861,7 +2861,7 @@ InlineProjectInProject
   + │    │    │    └── projections
   + │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   + │    │    └── filters
-  + │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  + │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    └── aggregations
   + │         └── bool-or [as=bool_or:12, outer=(11)]
   + │              └── notnull:11
@@ -2922,7 +2922,7 @@ CommuteLeftJoin (higher cost)
   + │    │    │    ├── columns: x:1!null
   + │    │    │    └── key: (1)
     │    │    └── filters
-    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+    │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
     │    └── aggregations
     │         └── bool-or [as=bool_or:12, outer=(11)]
     │              └── notnull:11
@@ -2973,7 +2973,7 @@ GenerateMergeJoins
     │    │    │    └── projections
     │    │    │         └── i:5 IS NOT NULL [as=notnull:11, outer=(5)]
   - │    │    └── filters
-  - │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+  - │    │         └── k:4 = x:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
   + │    │    └── filters (true)
     │    └── aggregations
     │         └── bool-or [as=bool_or:12, outer=(11)]

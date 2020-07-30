@@ -72,7 +72,7 @@ sort
       │    │    ├── key columns: [11] = [1]
       │    │    ├── lookup columns are key
       │    │    ├── stats: [rows=29822.8417, distinct(1)=29606.4627, null(1)=0, distinct(6)=5, null(6)=0, distinct(11)=29606.4627, null(11)=0, distinct(21)=2525.98116, null(21)=0, distinct(22)=2465.9862, null(22)=0, distinct(23)=365, null(23)=0, distinct(25)=2, null(25)=0]
-      │    │    ├── fd: (1)-->(6), (1)==(11), (11)==(1)
+      │    │    ├── fd: (1)-->(6), (1)==(1,11)
       │    │    ├── select
       │    │    │    ├── save-table-name: q12_select_5
       │    │    │    ├── columns: l_orderkey:11(int!null) l_shipdate:21(date!null) l_commitdate:22(date!null) l_receiptdate:23(date!null) l_shipmode:25(char!null)

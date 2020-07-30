@@ -100,7 +100,7 @@ project
                 │              │    │    ├── prune: (6-9)
                 │              │    │    └── interesting orderings: (+6)
                 │              │    └── filters
-                │              │         └── eq [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+                │              │         └── eq [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
                 │              │              ├── variable: k:6 [type=int]
                 │              │              └── variable: x:1 [type=int]
                 │              └── projections
@@ -260,7 +260,7 @@ project
                           │    ├── prune: (5-9)
                           │    └── interesting orderings: (+5) (-7,+8,+5)
                           └── filters
-                               └── eq [type=bool, outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(5), (5)==(1)]
+                               └── eq [type=bool, outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(1,5)]
                                     ├── variable: x:5 [type=int]
                                     └── variable: k:1 [type=int]
 
@@ -317,7 +317,7 @@ project
                                     │    ├── prune: (10-14)
                                     │    └── interesting orderings: (+10) (-12,+13,+10)
                                     └── filters
-                                         └── eq [type=bool, outer=(1,10), constraints=(/1: (/NULL - ]; /10: (/NULL - ]), fd=(1)==(10), (10)==(1)]
+                                         └── eq [type=bool, outer=(1,10), constraints=(/1: (/NULL - ]; /10: (/NULL - ]), fd=(1)==(1,10)]
                                               ├── variable: x:10 [type=int]
                                               └── variable: k:1 [type=int]
 
@@ -367,7 +367,7 @@ SELECT x, CASE WHEN true THEN x END FROM xysd
 project
  ├── columns: x:1(int!null) case:6(int!null)
  ├── key: (1)
- ├── fd: (1)==(6), (6)==(1)
+ ├── fd: (1)==(1,6)
  ├── prune: (1,6)
  ├── interesting orderings: (+1)
  ├── scan xysd

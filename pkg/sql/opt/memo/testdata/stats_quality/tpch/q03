@@ -78,14 +78,14 @@ limit
  │         │    │    ├── columns: c_custkey:1(int!null) c_mktsegment:7(char!null) o_orderkey:10(int!null) o_custkey:11(int!null) o_orderdate:14(date!null) o_shippriority:17(int!null) l_orderkey:20(int!null) l_extendedprice:25(float!null) l_discount:26(float!null) l_shipdate:30(date!null)
  │         │    │    ├── key columns: [10] = [20]
  │         │    │    ├── stats: [rows=493779.215, distinct(1)=29974.3087, null(1)=0, distinct(7)=1, null(7)=0, distinct(10)=359560.406, null(10)=0, distinct(11)=29974.3087, null(11)=0, distinct(14)=1169, null(14)=0, distinct(17)=1, null(17)=0, distinct(20)=359560.406, null(20)=0, distinct(25)=363943.091, null(25)=0, distinct(26)=11, null(26)=0, distinct(30)=1352, null(30)=0, distinct(25,26)=410295.908, null(25,26)=0]
- │         │    │    ├── fd: ()-->(7), (10)-->(11,14,17), (10)==(20), (20)==(10), (1)==(11), (11)==(1)
+ │         │    │    ├── fd: ()-->(7), (10)-->(11,14,17), (10)==(10,20), (1)==(1,11)
  │         │    │    ├── inner-join (hash)
  │         │    │    │    ├── save-table-name: q3_inner_join_6
  │         │    │    │    ├── columns: c_custkey:1(int!null) c_mktsegment:7(char!null) o_orderkey:10(int!null) o_custkey:11(int!null) o_orderdate:14(date!null) o_shippriority:17(int!null)
  │         │    │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
  │         │    │    │    ├── stats: [rows=220818.994, distinct(1)=29974.3087, null(1)=0, distinct(7)=1, null(7)=0, distinct(10)=190731.989, null(10)=0, distinct(11)=29974.3087, null(11)=0, distinct(14)=1169, null(14)=0, distinct(17)=1, null(17)=0]
  │         │    │    │    ├── key: (10)
- │         │    │    │    ├── fd: ()-->(7), (10)-->(11,14,17), (1)==(11), (11)==(1)
+ │         │    │    │    ├── fd: ()-->(7), (10)-->(11,14,17), (1)==(1,11)
  │         │    │    │    ├── select
  │         │    │    │    │    ├── save-table-name: q3_select_7
  │         │    │    │    │    ├── columns: o_orderkey:10(int!null) o_custkey:11(int!null) o_orderdate:14(date!null) o_shippriority:17(int!null)
@@ -125,7 +125,7 @@ limit
  │         │    │    │    │    └── filters
  │         │    │    │    │         └── c_mktsegment:7 = 'BUILDING' [type=bool, outer=(7), constraints=(/7: [/'BUILDING' - /'BUILDING']; tight), fd=()-->(7)]
  │         │    │    │    └── filters
- │         │    │    │         └── c_custkey:1 = o_custkey:11 [type=bool, outer=(1,11), constraints=(/1: (/NULL - ]; /11: (/NULL - ]), fd=(1)==(11), (11)==(1)]
+ │         │    │    │         └── c_custkey:1 = o_custkey:11 [type=bool, outer=(1,11), constraints=(/1: (/NULL - ]; /11: (/NULL - ]), fd=(1)==(1,11)]
  │         │    │    └── filters
  │         │    │         └── l_shipdate:30 > '1995-03-15' [type=bool, outer=(30), constraints=(/30: [/'1995-03-16' - ]; tight)]
  │         │    └── projections

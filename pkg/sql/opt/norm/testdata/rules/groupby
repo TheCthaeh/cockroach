@@ -378,7 +378,7 @@ group-by
  │    ├── columns: k:1!null r1:3!null r2:4!null x:6!null
  │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
  │    ├── key: (1)
- │    ├── fd: (1)-->(3,4), (4)==(6), (6)==(4)
+ │    ├── fd: (1)-->(3,4), (4)==(4,6)
  │    ├── scan fks
  │    │    ├── columns: k:1!null r1:3!null r2:4
  │    │    ├── key: (1)
@@ -387,7 +387,7 @@ group-by
  │    │    ├── columns: x:6!null
  │    │    └── key: (6)
  │    └── filters
- │         └── x:6 = r2:4 [outer=(4,6), constraints=(/4: (/NULL - ]; /6: (/NULL - ]), fd=(4)==(6), (6)==(4)]
+ │         └── x:6 = r2:4 [outer=(4,6), constraints=(/4: (/NULL - ]; /6: (/NULL - ]), fd=(4)==(4,6)]
  └── aggregations
       └── sum [as=sum:9, outer=(3)]
            └── r1:3
@@ -463,7 +463,7 @@ scalar-group-by
  │    ├── scan fks
  │    │    └── columns: r1:6!null
  │    └── filters
- │         └── x:1 = r1:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+ │         └── x:1 = r1:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
  └── aggregations
       └── max [as=max:9, outer=(6)]
            └── r1:6
@@ -711,7 +711,7 @@ project
  │    │    │    └── projections
  │    │    │         └── x:7 + xy.y:8 [as=column11:11, outer=(7,8), immutable]
  │    │    └── filters
- │    │         └── k:1 = column11:11 [outer=(1,11), constraints=(/1: (/NULL - ]; /11: (/NULL - ]), fd=(1)==(11), (11)==(1)]
+ │    │         └── k:1 = column11:11 [outer=(1,11), constraints=(/1: (/NULL - ]; /11: (/NULL - ]), fd=(1)==(1,11)]
  │    └── aggregations
  │         └── const-agg [as=xy.y:8, outer=(8)]
  │              └── xy.y:8
@@ -773,7 +773,7 @@ insert nullablecols
            │    │    ├── key: (21)
            │    │    └── fd: (21)-->(18), (18)~~>(21)
            │    └── filters
-           │         └── i:7 = c1:18 [outer=(7,18), constraints=(/7: (/NULL - ]; /18: (/NULL - ]), fd=(7)==(18), (18)==(7)]
+           │         └── i:7 = c1:18 [outer=(7,18), constraints=(/7: (/NULL - ]; /18: (/NULL - ]), fd=(7)==(7,18)]
            └── filters
                 └── rowid:21 IS NULL [outer=(21), constraints=(/21: [/NULL - /NULL]; tight), fd=()-->(21)]
 
@@ -837,7 +837,7 @@ upsert nullablecols
       │    │    ├── key: (21)
       │    │    └── fd: (21)-->(18-20), (18)~~>(19-21), (19,20)~~>(18,21)
       │    └── filters
-      │         └── i:7 = c1:18 [outer=(7,18), constraints=(/7: (/NULL - ]; /18: (/NULL - ]), fd=(7)==(18), (18)==(7)]
+      │         └── i:7 = c1:18 [outer=(7,18), constraints=(/7: (/NULL - ]; /18: (/NULL - ]), fd=(7)==(7,18)]
       └── projections
            └── CASE WHEN rowid:21 IS NULL THEN i:7 ELSE 1 END [as=upsert_c3:26, outer=(7,21)]
 
@@ -971,7 +971,7 @@ distinct-on
  ├── inner-join (hash)
  │    ├── columns: k:1!null i:2!null f:3 x:7!null y:8!null
  │    ├── key: (1,7)
- │    ├── fd: (1)-->(2,3), (2,3)~~>(1), (7)-->(8), (2)==(8), (8)==(2)
+ │    ├── fd: (1)-->(2,3), (2,3)~~>(1), (7)-->(8), (2)==(2,8)
  │    ├── scan a
  │    │    ├── columns: k:1!null i:2!null f:3
  │    │    ├── key: (1)
@@ -981,7 +981,7 @@ distinct-on
  │    │    ├── key: (7)
  │    │    └── fd: (7)-->(8)
  │    └── filters
- │         └── i:2 = y:8 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+ │         └── i:2 = y:8 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
  └── aggregations
       ├── first-agg [as=i:2, outer=(2)]
       │    └── i:2
@@ -1042,7 +1042,7 @@ insert xy
            │    │    │    ├── columns: x:8!null
            │    │    │    └── key: (8)
            │    │    └── filters
-           │    │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(8), (8)==(5)]
+           │    │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(5,8)]
            │    └── filters
            │         └── x:8 IS NULL [outer=(8), constraints=(/8: [/NULL - /NULL]; tight), fd=()-->(8)]
            └── 1
@@ -1098,7 +1098,7 @@ upsert xy
       │    │    ├── key: (8)
       │    │    └── fd: (8)-->(9)
       │    └── filters
-      │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(8), (8)==(5)]
+      │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(5,8)]
       └── projections
            └── CASE WHEN x:8 IS NULL THEN column7:7 ELSE 1 END [as=upsert_y:13, outer=(7,8)]
 
@@ -1143,7 +1143,7 @@ insert xy
       │    │    │    ├── columns: x:8!null
       │    │    │    └── key: (8)
       │    │    └── filters
-      │    │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(8), (8)==(5)]
+      │    │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(5,8)]
       │    └── filters
       │         └── x:8 IS NULL [outer=(8), constraints=(/8: [/NULL - /NULL]; tight), fd=()-->(8)]
       └── aggregations
@@ -1202,7 +1202,7 @@ upsert xy
       │    │    ├── key: (8)
       │    │    └── fd: (8)-->(9)
       │    └── filters
-      │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(8), (8)==(5)]
+      │         └── y:5 = x:8 [outer=(5,8), constraints=(/5: (/NULL - ]; /8: (/NULL - ]), fd=(5)==(5,8)]
       └── projections
            └── CASE WHEN x:8 IS NULL THEN column7:7 ELSE 1 END [as=upsert_y:13, outer=(7,8)]
 
@@ -1252,9 +1252,9 @@ upsert abc
       │    ├── columns: a:11!null b:12!null c:13!null
       │    └── key: (11-13)
       └── filters
-           ├── "?column?":9 = a:11 [outer=(9,11), constraints=(/9: (/NULL - ]; /11: (/NULL - ]), fd=(9)==(11), (11)==(9)]
-           ├── b:6 = b:12 [outer=(6,12), constraints=(/6: (/NULL - ]; /12: (/NULL - ]), fd=(6)==(12), (12)==(6)]
-           └── "?column?":10 = c:13 [outer=(10,13), constraints=(/10: (/NULL - ]; /13: (/NULL - ]), fd=(10)==(13), (13)==(10)]
+           ├── "?column?":9 = a:11 [outer=(9,11), constraints=(/9: (/NULL - ]; /11: (/NULL - ]), fd=(9)==(9,11)]
+           ├── b:6 = b:12 [outer=(6,12), constraints=(/6: (/NULL - ]; /12: (/NULL - ]), fd=(6)==(6,12)]
+           └── "?column?":10 = c:13 [outer=(10,13), constraints=(/10: (/NULL - ]; /13: (/NULL - ]), fd=(10)==(10,13)]
 
 # Test removal of not-null column, but not nullable column.
 norm expect=ReduceNotNullGroupingCols
@@ -1308,9 +1308,9 @@ upsert abc
       │    │    ├── columns: a:10!null b:11!null c:12!null
       │    │    └── key: (10-12)
       │    └── filters
-      │         ├── "?column?":9 = a:10 [outer=(9,10), constraints=(/9: (/NULL - ]; /10: (/NULL - ]), fd=(9)==(10), (10)==(9)]
-      │         ├── b:6 = b:11 [outer=(6,11), constraints=(/6: (/NULL - ]; /11: (/NULL - ]), fd=(6)==(11), (11)==(6)]
-      │         └── c:7 = c:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(12), (12)==(7)]
+      │         ├── "?column?":9 = a:10 [outer=(9,10), constraints=(/9: (/NULL - ]; /10: (/NULL - ]), fd=(9)==(9,10)]
+      │         ├── b:6 = b:11 [outer=(6,11), constraints=(/6: (/NULL - ]; /11: (/NULL - ]), fd=(6)==(6,11)]
+      │         └── c:7 = c:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(7,12)]
       └── projections
            └── CASE WHEN a:10 IS NULL THEN c:7 ELSE 2 END [as=upsert_c:17, outer=(7,10)]
 
@@ -1787,7 +1787,7 @@ insert a
            │    │    │    └── filters
            │    │    │         └── s:20 = 'foo' [outer=(20), constraints=(/20: [/'foo' - /'foo']; tight), fd=()-->(20)]
            │    │    └── filters
-           │    │         └── i:8 = i:18 [outer=(8,18), constraints=(/8: (/NULL - ]; /18: (/NULL - ]), fd=(8)==(18), (18)==(8)]
+           │    │         └── i:8 = i:18 [outer=(8,18), constraints=(/8: (/NULL - ]; /18: (/NULL - ]), fd=(8)==(8,18)]
            │    └── filters
            │         └── s:20 IS NULL [outer=(20), constraints=(/20: [/NULL - /NULL]; tight), fd=()-->(20)]
            └── 1
@@ -1832,7 +1832,7 @@ project
  │         │    ├── key: (7)
  │         │    └── fd: (7)-->(8)
  │         └── filters
- │              └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
+ │              └── y:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(2,8)]
  └── projections
       └── xy.x:7 [as=x:10, outer=(7)]
 
@@ -1892,8 +1892,8 @@ upsert a
       │    │    ├── key: (17)
       │    │    └── fd: (17)-->(18-21), (18,20)-->(17,19,21), (18,19)~~>(17,20,21)
       │    └── filters
-      │         ├── i:8 = i:18 [outer=(8,18), constraints=(/8: (/NULL - ]; /18: (/NULL - ]), fd=(8)==(18), (18)==(8)]
-      │         └── "?column?":14 = s:20 [outer=(14,20), constraints=(/14: (/NULL - ]; /20: (/NULL - ]), fd=(14)==(20), (20)==(14)]
+      │         ├── i:8 = i:18 [outer=(8,18), constraints=(/8: (/NULL - ]; /18: (/NULL - ]), fd=(8)==(8,18)]
+      │         └── "?column?":14 = s:20 [outer=(14,20), constraints=(/14: (/NULL - ]; /20: (/NULL - ]), fd=(14)==(14,20)]
       └── projections
            └── CASE WHEN k:17 IS NULL THEN column15:15 ELSE 1.1 END [as=upsert_f:26, outer=(15,17)]
 
@@ -1941,9 +1941,9 @@ project
  │    │    │    ├── columns: a:4!null b:5!null c:6!null
  │    │    │    └── key: (4-6)
  │    │    └── filters
- │    │         ├── a:4 = column1:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
- │    │         ├── b:5 = column2:2 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
- │    │         └── c:6 = column3:3 [outer=(3,6), constraints=(/3: (/NULL - ]; /6: (/NULL - ]), fd=(3)==(6), (6)==(3)]
+ │    │         ├── a:4 = column1:1 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
+ │    │         ├── b:5 = column2:2 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
+ │    │         └── c:6 = column3:3 [outer=(3,6), constraints=(/3: (/NULL - ]; /6: (/NULL - ]), fd=(3)==(3,6)]
  │    └── filters
  │         └── (column1:1 > 100) OR (b:5 > 100) [outer=(1,5)]
  └── projections
@@ -1973,7 +1973,7 @@ distinct-on
  │    ├── scan abc
  │    │    └── columns: a:2!null
  │    └── filters
- │         └── a:2 = column1:1 [outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ]), fd=(1)==(2), (2)==(1)]
+ │         └── a:2 = column1:1 [outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ]), fd=(1)==(1,2)]
  └── aggregations
       └── first-agg [as=a:2, outer=(2)]
            └── a:2
@@ -2004,8 +2004,8 @@ distinct-on
  │    │    ├── columns: a:3!null b:4!null c:5!null
  │    │    └── key: (3-5)
  │    └── filters
- │         ├── column1:1 = a:3 [outer=(1,3), constraints=(/1: (/NULL - ]; /3: (/NULL - ]), fd=(1)==(3), (3)==(1)]
- │         └── column2:2 = c:5 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+ │         ├── column1:1 = a:3 [outer=(1,3), constraints=(/1: (/NULL - ]; /3: (/NULL - ]), fd=(1)==(1,3)]
+ │         └── column2:2 = c:5 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
  └── aggregations
       ├── first-agg [as=a:3, outer=(3)]
       │    └── a:3
@@ -2066,7 +2066,7 @@ distinct-on
  │    │    ├── (1,)
  │    │    └── (2,)
  │    └── filters
- │         └── k:1 = column1:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
+ │         └── k:1 = column1:7 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(1,7)]
  └── aggregations
       └── first-agg [as=k:1, outer=(1)]
            └── k:1
@@ -2223,8 +2223,8 @@ insert a
            │    │    ├── columns: i:13!null s:15!null
            │    │    └── key: (13,15)
            │    └── filters
-           │         ├── column2:8 = s:15 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(15), (15)==(8)]
-           │         └── column3:9 = i:13 [outer=(9,13), constraints=(/9: (/NULL - ]; /13: (/NULL - ]), fd=(9)==(13), (13)==(9)]
+           │         ├── column2:8 = s:15 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(8,15)]
+           │         └── column3:9 = i:13 [outer=(9,13), constraints=(/9: (/NULL - ]; /13: (/NULL - ]), fd=(9)==(9,13)]
            └── filters
                 └── s:15 IS NULL [outer=(15), constraints=(/15: [/NULL - /NULL]; tight), fd=()-->(15)]
 
@@ -2273,8 +2273,8 @@ upsert a
       │    │    ├── key: (12)
       │    │    └── fd: (12)-->(13-16), (13,15)-->(12,14,16), (13,14)~~>(12,15,16)
       │    └── filters
-      │         ├── column3:9 = i:13 [outer=(9,13), constraints=(/9: (/NULL - ]; /13: (/NULL - ]), fd=(9)==(13), (13)==(9)]
-      │         └── column2:8 = s:15 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(15), (15)==(8)]
+      │         ├── column3:9 = i:13 [outer=(9,13), constraints=(/9: (/NULL - ]; /13: (/NULL - ]), fd=(9)==(9,13)]
+      │         └── column2:8 = s:15 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(8,15)]
       └── projections
            └── CASE WHEN k:12 IS NULL THEN column10:10 ELSE 1.0 END [as=upsert_f:21, outer=(10,12)]
 
@@ -2340,8 +2340,8 @@ upsert a
       │    │    ├── key: (12)
       │    │    └── fd: (12)-->(13-16), (13,15)-->(12,14,16), (13,14)~~>(12,15,16)
       │    └── filters
-      │         ├── column3:9 = i:13 [outer=(9,13), constraints=(/9: (/NULL - ]; /13: (/NULL - ]), fd=(9)==(13), (13)==(9)]
-      │         └── column2:8 = s:15 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(15), (15)==(8)]
+      │         ├── column3:9 = i:13 [outer=(9,13), constraints=(/9: (/NULL - ]; /13: (/NULL - ]), fd=(9)==(9,13)]
+      │         └── column2:8 = s:15 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(8,15)]
       └── projections
            └── CASE WHEN k:12 IS NULL THEN column10:10 ELSE 1.0 END [as=upsert_f:21, outer=(10,12)]
 
@@ -2407,23 +2407,23 @@ insert a
            │    │    │    │    │    │    ├── columns: k:12!null
            │    │    │    │    │    │    └── key: (12)
            │    │    │    │    │    └── filters
-           │    │    │    │    │         └── column1:7 = k:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(12), (12)==(7)]
+           │    │    │    │    │         └── column1:7 = k:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(7,12)]
            │    │    │    │    └── filters
            │    │    │    │         └── k:12 IS NULL [outer=(12), constraints=(/12: [/NULL - /NULL]; tight), fd=()-->(12)]
            │    │    │    ├── scan a
            │    │    │    │    ├── columns: i:19!null s:21!null
            │    │    │    │    └── key: (19,21)
            │    │    │    └── filters
-           │    │    │         ├── column2:8 = s:21 [outer=(8,21), constraints=(/8: (/NULL - ]; /21: (/NULL - ]), fd=(8)==(21), (21)==(8)]
-           │    │    │         └── column3:9 = i:19 [outer=(9,19), constraints=(/9: (/NULL - ]; /19: (/NULL - ]), fd=(9)==(19), (19)==(9)]
+           │    │    │         ├── column2:8 = s:21 [outer=(8,21), constraints=(/8: (/NULL - ]; /21: (/NULL - ]), fd=(8)==(8,21)]
+           │    │    │         └── column3:9 = i:19 [outer=(9,19), constraints=(/9: (/NULL - ]; /19: (/NULL - ]), fd=(9)==(9,19)]
            │    │    └── filters
            │    │         └── s:21 IS NULL [outer=(21), constraints=(/21: [/NULL - /NULL]; tight), fd=()-->(21)]
            │    ├── scan a
            │    │    ├── columns: i:25!null f:26
            │    │    └── lax-key: (25,26)
            │    └── filters
-           │         ├── column4:10 = f:26 [outer=(10,26), constraints=(/10: (/NULL - ]; /26: (/NULL - ]), fd=(10)==(26), (26)==(10)]
-           │         └── column3:9 = i:25 [outer=(9,25), constraints=(/9: (/NULL - ]; /25: (/NULL - ]), fd=(9)==(25), (25)==(9)]
+           │         ├── column4:10 = f:26 [outer=(10,26), constraints=(/10: (/NULL - ]; /26: (/NULL - ]), fd=(10)==(10,26)]
+           │         └── column3:9 = i:25 [outer=(9,25), constraints=(/9: (/NULL - ]; /25: (/NULL - ]), fd=(9)==(9,25)]
            └── filters
                 └── i:25 IS NULL [outer=(25), constraints=(/25: [/NULL - /NULL]; tight), fd=()-->(25)]
 
@@ -2501,15 +2501,15 @@ insert a
       │    │    │    │    │    │    │    │    ├── columns: k:12!null
       │    │    │    │    │    │    │    │    └── key: (12)
       │    │    │    │    │    │    │    └── filters
-      │    │    │    │    │    │    │         └── column1:7 = k:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(12), (12)==(7)]
+      │    │    │    │    │    │    │         └── column1:7 = k:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(7,12)]
       │    │    │    │    │    │    └── filters
       │    │    │    │    │    │         └── k:12 IS NULL [outer=(12), constraints=(/12: [/NULL - /NULL]; tight), fd=()-->(12)]
       │    │    │    │    │    ├── scan a
       │    │    │    │    │    │    ├── columns: i:19!null s:21!null
       │    │    │    │    │    │    └── key: (19,21)
       │    │    │    │    │    └── filters
-      │    │    │    │    │         ├── column2:8 = s:21 [outer=(8,21), constraints=(/8: (/NULL - ]; /21: (/NULL - ]), fd=(8)==(21), (21)==(8)]
-      │    │    │    │    │         └── column10:10 = i:19 [outer=(10,19), constraints=(/10: (/NULL - ]; /19: (/NULL - ]), fd=(10)==(19), (19)==(10)]
+      │    │    │    │    │         ├── column2:8 = s:21 [outer=(8,21), constraints=(/8: (/NULL - ]; /21: (/NULL - ]), fd=(8)==(8,21)]
+      │    │    │    │    │         └── column10:10 = i:19 [outer=(10,19), constraints=(/10: (/NULL - ]; /19: (/NULL - ]), fd=(10)==(10,19)]
       │    │    │    │    └── filters
       │    │    │    │         └── s:21 IS NULL [outer=(21), constraints=(/21: [/NULL - /NULL]; tight), fd=()-->(21)]
       │    │    │    └── aggregations
@@ -2523,8 +2523,8 @@ insert a
       │    │    │    ├── columns: i:25!null f:26
       │    │    │    └── lax-key: (25,26)
       │    │    └── filters
-      │    │         ├── column3:9 = f:26 [outer=(9,26), constraints=(/9: (/NULL - ]; /26: (/NULL - ]), fd=(9)==(26), (26)==(9)]
-      │    │         └── column10:10 = i:25 [outer=(10,25), constraints=(/10: (/NULL - ]; /25: (/NULL - ]), fd=(10)==(25), (25)==(10)]
+      │    │         ├── column3:9 = f:26 [outer=(9,26), constraints=(/9: (/NULL - ]; /26: (/NULL - ]), fd=(9)==(9,26)]
+      │    │         └── column10:10 = i:25 [outer=(10,25), constraints=(/10: (/NULL - ]; /25: (/NULL - ]), fd=(10)==(10,25)]
       │    └── filters
       │         └── i:25 IS NULL [outer=(25), constraints=(/25: [/NULL - /NULL]; tight), fd=()-->(25)]
       └── aggregations
@@ -2618,7 +2618,7 @@ insert a
            │    │    │    │    │    │    │    ├── columns: k:12!null
            │    │    │    │    │    │    │    └── key: (12)
            │    │    │    │    │    │    └── filters
-           │    │    │    │    │    │         └── column1:7 = k:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(12), (12)==(7)]
+           │    │    │    │    │    │         └── column1:7 = k:12 [outer=(7,12), constraints=(/7: (/NULL - ]; /12: (/NULL - ]), fd=(7)==(7,12)]
            │    │    │    │    │    └── filters
            │    │    │    │    │         └── k:12 IS NULL [outer=(12), constraints=(/12: [/NULL - /NULL]; tight), fd=()-->(12)]
            │    │    │    │    └── aggregations
@@ -2634,16 +2634,16 @@ insert a
            │    │    │    │    ├── columns: i:19!null s:21!null
            │    │    │    │    └── key: (19,21)
            │    │    │    └── filters
-           │    │    │         ├── column2:8 = s:21 [outer=(8,21), constraints=(/8: (/NULL - ]; /21: (/NULL - ]), fd=(8)==(21), (21)==(8)]
-           │    │    │         └── column3:9 = i:19 [outer=(9,19), constraints=(/9: (/NULL - ]; /19: (/NULL - ]), fd=(9)==(19), (19)==(9)]
+           │    │    │         ├── column2:8 = s:21 [outer=(8,21), constraints=(/8: (/NULL - ]; /21: (/NULL - ]), fd=(8)==(8,21)]
+           │    │    │         └── column3:9 = i:19 [outer=(9,19), constraints=(/9: (/NULL - ]; /19: (/NULL - ]), fd=(9)==(9,19)]
            │    │    └── filters
            │    │         └── s:21 IS NULL [outer=(21), constraints=(/21: [/NULL - /NULL]; tight), fd=()-->(21)]
            │    ├── scan a
            │    │    ├── columns: i:25!null f:26
            │    │    └── lax-key: (25,26)
            │    └── filters
-           │         ├── column4:10 = f:26 [outer=(10,26), constraints=(/10: (/NULL - ]; /26: (/NULL - ]), fd=(10)==(26), (26)==(10)]
-           │         └── column3:9 = i:25 [outer=(9,25), constraints=(/9: (/NULL - ]; /25: (/NULL - ]), fd=(9)==(25), (25)==(9)]
+           │         ├── column4:10 = f:26 [outer=(10,26), constraints=(/10: (/NULL - ]; /26: (/NULL - ]), fd=(10)==(10,26)]
+           │         └── column3:9 = i:25 [outer=(9,25), constraints=(/9: (/NULL - ]; /25: (/NULL - ]), fd=(9)==(9,25)]
            └── filters
                 └── i:25 IS NULL [outer=(25), constraints=(/25: [/NULL - /NULL]; tight), fd=()-->(25)]
 
@@ -2694,7 +2694,7 @@ insert a
       │    │    │    └── filters
       │    │    │         └── s:19 = 'foo' [outer=(19), constraints=(/19: [/'foo' - /'foo']; tight), fd=()-->(19)]
       │    │    └── filters
-      │    │         └── i:8 = i:17 [outer=(8,17), constraints=(/8: (/NULL - ]; /17: (/NULL - ]), fd=(8)==(17), (17)==(8)]
+      │    │         └── i:8 = i:17 [outer=(8,17), constraints=(/8: (/NULL - ]; /17: (/NULL - ]), fd=(8)==(8,17)]
       │    └── filters
       │         └── s:19 IS NULL [outer=(19), constraints=(/19: [/NULL - /NULL]; tight), fd=()-->(19)]
       └── aggregations

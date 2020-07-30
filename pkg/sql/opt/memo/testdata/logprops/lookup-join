@@ -28,13 +28,13 @@ inner-join (lookup abcd)
  ├── columns: m:1(int!null) n:2(int) a:5(int!null) b:6(int) c:7(int)
  ├── key columns: [8] = [8]
  ├── lookup columns are key
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── prune: (2,6,7)
  ├── interesting orderings: (+5,+6)
  ├── inner-join (lookup abcd@secondary)
  │    ├── columns: m:1(int!null) n:2(int) a:5(int!null) b:6(int) abcd.rowid:8(int!null)
  │    ├── key columns: [1] = [5]
- │    ├── fd: (8)-->(5,6), (1)==(5), (5)==(1)
+ │    ├── fd: (8)-->(5,6), (1)==(1,5)
  │    ├── scan small
  │    │    ├── columns: m:1(int) n:2(int)
  │    │    ├── prune: (1,2)
@@ -51,13 +51,13 @@ inner-join (lookup abcd)
  ├── columns: m:1(int!null) n:2(int!null) a:5(int!null) b:6(int) c:7(int)
  ├── key columns: [8] = [8]
  ├── lookup columns are key
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── prune: (6,7)
  ├── interesting orderings: (+5,+6)
  ├── inner-join (lookup abcd@secondary)
  │    ├── columns: m:1(int!null) n:2(int!null) a:5(int!null) b:6(int) abcd.rowid:8(int!null)
  │    ├── key columns: [1] = [5]
- │    ├── fd: (8)-->(5,6), (1)==(5), (5)==(1)
+ │    ├── fd: (8)-->(5,6), (1)==(1,5)
  │    ├── select
  │    │    ├── columns: m:1(int) n:2(int!null)
  │    │    ├── prune: (1)
@@ -80,13 +80,13 @@ inner-join (lookup abcd)
  ├── columns: m:1(int!null) n:2(int) a:5(int!null) b:6(int!null) c:7(int)
  ├── key columns: [8] = [8]
  ├── lookup columns are key
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── prune: (2,7)
  ├── interesting orderings: (+5,+6)
  ├── inner-join (lookup abcd@secondary)
  │    ├── columns: m:1(int!null) n:2(int) a:5(int!null) b:6(int!null) abcd.rowid:8(int!null)
  │    ├── key columns: [1] = [5]
- │    ├── fd: (8)-->(5,6), (1)==(5), (5)==(1)
+ │    ├── fd: (8)-->(5,6), (1)==(1,5)
  │    ├── scan small
  │    │    ├── columns: m:1(int) n:2(int)
  │    │    ├── prune: (1,2)
@@ -105,13 +105,13 @@ inner-join (lookup abcd)
  ├── columns: m:1(int!null) n:2(int) a:5(int!null) b:6(int) c:7(int!null)
  ├── key columns: [8] = [8]
  ├── lookup columns are key
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── prune: (2,6)
  ├── interesting orderings: (+5,+6)
  ├── inner-join (lookup abcd@secondary)
  │    ├── columns: m:1(int!null) n:2(int) a:5(int!null) b:6(int) abcd.rowid:8(int!null)
  │    ├── key columns: [1] = [5]
- │    ├── fd: (8)-->(5,6), (1)==(5), (5)==(1)
+ │    ├── fd: (8)-->(5,6), (1)==(1,5)
  │    ├── scan small
  │    │    ├── columns: m:1(int) n:2(int)
  │    │    ├── prune: (1,2)
@@ -130,12 +130,12 @@ inner-join (lookup abcd)
  ├── columns: m:1(int!null) n:2(int!null) a:5(int!null) b:6(int!null) c:7(int!null)
  ├── key columns: [8] = [8]
  ├── lookup columns are key
- ├── fd: (1)==(5), (5)==(1), (2)==(6), (6)==(2)
+ ├── fd: (1)==(1,5), (2)==(2,6)
  ├── interesting orderings: (+5,+6)
  ├── inner-join (lookup abcd@secondary)
  │    ├── columns: m:1(int!null) n:2(int!null) a:5(int!null) b:6(int!null) abcd.rowid:8(int!null)
  │    ├── key columns: [1 2] = [5 6]
- │    ├── fd: (8)-->(5,6), (1)==(5), (5)==(1), (2)==(6), (6)==(2)
+ │    ├── fd: (8)-->(5,6), (1)==(1,5), (2)==(2,6)
  │    ├── scan small
  │    │    ├── columns: m:1(int) n:2(int)
  │    │    ├── prune: (1,2)

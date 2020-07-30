@@ -56,7 +56,7 @@ project
  │    │    │    ├── columns: l_partkey:2(int!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_shipdate:11(date!null) p_partkey:18(int!null) p_type:22(varchar!null)
  │    │    │    ├── multiplicity: left-rows(zero-or-more), right-rows(exactly-one)
  │    │    │    ├── stats: [rows=82726.8788, distinct(2)=67871.4531, null(2)=0, distinct(6)=51381.824, null(6)=0, distinct(7)=11, null(7)=0, distinct(11)=30, null(11)=0, distinct(18)=67871.4531, null(18)=0, distinct(22)=150, null(22)=0, distinct(6,7)=52210.2591, null(6,7)=0, distinct(6,7,22)=82726.8788, null(6,7,22)=0]
- │    │    │    ├── fd: (18)-->(22), (2)==(18), (18)==(2)
+ │    │    │    ├── fd: (18)-->(22), (2)==(2,18)
  │    │    │    ├── scan part
  │    │    │    │    ├── save-table-name: q14_scan_5
  │    │    │    │    ├── columns: p_partkey:18(int!null) p_type:22(varchar!null)
@@ -83,7 +83,7 @@ project
  │    │    │    │         ├── key: (1,4)
  │    │    │    │         └── fd: (1,4)-->(11)
  │    │    │    └── filters
- │    │    │         └── l_partkey:2 = p_partkey:18 [type=bool, outer=(2,18), constraints=(/2: (/NULL - ]; /18: (/NULL - ]), fd=(2)==(18), (18)==(2)]
+ │    │    │         └── l_partkey:2 = p_partkey:18 [type=bool, outer=(2,18), constraints=(/2: (/NULL - ]; /18: (/NULL - ]), fd=(2)==(2,18)]
  │    │    └── projections
  │    │         ├── CASE WHEN p_type:22 LIKE 'PROMO%' THEN l_extendedprice:6 * (1.0 - l_discount:7) ELSE 0.0 END [as=column28:28, type=float, outer=(6,7,22), immutable]
  │    │         └── l_extendedprice:6 * (1.0 - l_discount:7) [as=column30:30, type=float, outer=(6,7), immutable]

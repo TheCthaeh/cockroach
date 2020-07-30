@@ -337,14 +337,14 @@ SELECT * FROM (VALUES (1, 2), (3, 4)) AS t(one, two) WHERE one=two
 select
  ├── columns: one:1!null two:2!null
  ├── cardinality: [0 - 2]
- ├── fd: (1)==(2), (2)==(1)
+ ├── fd: (1)==(1,2)
  ├── values
  │    ├── columns: column1:1!null column2:2!null
  │    ├── cardinality: [2 - 2]
  │    ├── (1, 2)
  │    └── (3, 4)
  └── filters
-      └── column1:1 = column2:2 [outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ]), fd=(1)==(2), (2)==(1)]
+      └── column1:1 = column2:2 [outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ]), fd=(1)==(1,2)]
 
 # --------------------------------------------------
 # InlineJoinConstantsLeft + InlineJoinConstantsRight
@@ -415,7 +415,7 @@ SELECT * FROM a INNER JOIN (SELECT 1 AS one, y FROM xy) ON k=y
 inner-join (hash)
  ├── columns: k:1!null i:2 f:3 s:4 j:5 one:10!null y:8!null
  ├── multiplicity: left-rows(zero-or-more), right-rows(zero-or-one)
- ├── fd: ()-->(10), (1)-->(2-5), (1)==(8), (8)==(1)
+ ├── fd: ()-->(10), (1)-->(2-5), (1)==(1,8)
  ├── scan a
  │    ├── columns: k:1!null i:2 f:3 s:4 j:5
  │    ├── key: (1)
@@ -428,7 +428,7 @@ inner-join (hash)
  │    └── projections
  │         └── 1 [as=one:10]
  └── filters
-      └── k:1 = y:8 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(8), (8)==(1)]
+      └── k:1 = y:8 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(1,8)]
 
 # --------------------------------------------------
 # PushSelectIntoInlinableProject

@@ -119,7 +119,7 @@ project
                           │    ├── prune: (4-7)
                           │    └── interesting orderings: (+6)
                           └── filters
-                               └── eq [type=bool, outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+                               └── eq [type=bool, outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
                                     ├── variable: u:4 [type=int]
                                     └── variable: x:1 [type=int]
 
@@ -164,7 +164,7 @@ project
                 │         │    ├── prune: (4-7)
                 │         │    └── interesting orderings: (+6)
                 │         └── filters
-                │              └── eq [type=bool, outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+                │              └── eq [type=bool, outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
                 │                   ├── variable: u:4 [type=int]
                 │                   └── variable: x:1 [type=int]
                 └── variable: y:2 [type=int]
@@ -233,7 +233,7 @@ group-by
  │         ├── columns: x:1(int!null) y:2(int) div:4(decimal) u:5(int!null) v:6(int!null)
  │         ├── multiplicity: left-rows(zero-or-more), right-rows(zero-or-one)
  │         ├── stable
- │         ├── fd: (1)-->(2,4), (1)==(5), (5)==(1)
+ │         ├── fd: (1)-->(2,4), (1)==(1,5)
  │         ├── prune: (2,4,6)
  │         ├── interesting orderings: (+1)
  │         ├── project
@@ -278,7 +278,7 @@ group-by
  │         │                   └── cast: TIMESTAMPTZ [type=timestamptz]
  │         │                        └── const: '2018-01-01' [type=string]
  │         └── filters
- │              └── eq [type=bool, outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(5), (5)==(1)]
+ │              └── eq [type=bool, outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(1,5)]
  │                   ├── variable: x:1 [type=int]
  │                   └── variable: u:5 [type=int]
  └── aggregations

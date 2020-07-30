@@ -40,7 +40,7 @@ inner-join (merge)
  ├── columns: id:1!null dst:5!null
  ├── left ordering: +1
  ├── right ordering: +5
- ├── fd: (1)==(5), (5)==(1)
+ ├── fd: (1)==(1,5)
  ├── scan nodes
  │    ├── columns: id:1!null
  │    ├── key: (1)
@@ -292,7 +292,7 @@ group-by
  │    ├── columns: vehicle_id:3!null v.id:10!null owner_id:13
  │    ├── left ordering: +3
  │    ├── right ordering: +10
- │    ├── fd: (3)==(10), (10)==(3)
+ │    ├── fd: (3)==(3,10)
  │    ├── scan r@rides_vehicle_id_idx
  │    │    ├── columns: vehicle_id:3
  │    │    └── ordering: +3
@@ -504,7 +504,7 @@ scalar-group-by
  │    ├── columns: o_orderkey:1!null l_orderkey:12!null
  │    ├── left ordering: +1
  │    ├── right ordering: +12
- │    ├── fd: (1)==(12), (12)==(1)
+ │    ├── fd: (1)==(1,12)
  │    ├── scan orders@o_ok
  │    │    ├── columns: o_orderkey:1!null
  │    │    ├── key: (1)
@@ -550,12 +550,12 @@ project
  │    ├── key columns: [1] = [1]
  │    ├── lookup columns are key
  │    ├── immutable
- │    ├── fd: (1)-->(2,3), (5)-->(6), (2)==(6), (6)==(2)
+ │    ├── fd: (1)-->(2,3), (5)-->(6), (2)==(2,6)
  │    ├── inner-join (lookup idtable@secondary_id)
  │    │    ├── columns: primary_id:1!null idtable.secondary_id:2!null value:5!null column6:6!null
  │    │    ├── key columns: [6] = [2]
  │    │    ├── immutable
- │    │    ├── fd: (5)-->(6), (1)-->(2), (2)==(6), (6)==(2)
+ │    │    ├── fd: (5)-->(6), (1)-->(2), (2)==(2,6)
  │    │    ├── project
  │    │    │    ├── columns: column6:6 value:5!null
  │    │    │    ├── cardinality: [2 - 2]

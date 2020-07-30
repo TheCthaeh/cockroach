@@ -18,7 +18,7 @@ inner-join (hash)
  ├── columns: t.public.abc.a:1(int!null) t.public.abc.b:2(int) t.public.abc.c:3(int) t.public.def.d:6(int!null) t.public.def.e:7(int) t.public.def.f:8(int)
  ├── stats: [rows=9801, distinct(1)=99, null(1)=0, distinct(6)=99, null(6)=0]
  ├── cost: 2268.07
- ├── fd: (1)==(6), (6)==(1)
+ ├── fd: (1)==(1,6)
  ├── prune: (2,3,7,8)
  ├── interesting orderings: (+1,+2)
  ├── scan t.public.abc
@@ -35,7 +35,7 @@ inner-join (hash)
  │    ├── prune: (6-8)
  │    └── unfiltered-cols: (6-10)
  └── filters
-      └── eq [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+      └── eq [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
            ├── variable: t.public.abc.a:1 [type=int]
            └── variable: t.public.def.d:6 [type=int]
 
@@ -81,7 +81,7 @@ inner-join (merge)
  ├── right ordering: +6
  ├── stats: [rows=9801, distinct(1)=99, null(1)=0, distinct(6)=99, null(6)=0]
  ├── cost: 2696.71137
- ├── fd: (1)==(6), (6)==(1)
+ ├── fd: (1)==(1,6)
  ├── sort
  │    ├── columns: t.public.abc.a:1(int) t.public.abc.b:2(int) t.public.abc.c:3(int)
  │    ├── stats: [rows=1000, distinct(1)=100, null(1)=10]

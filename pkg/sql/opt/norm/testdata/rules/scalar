@@ -426,7 +426,7 @@ select
                 │    │    ├── scan xy
                 │    │    │    └── columns: xy.y:16
                 │    │    └── filters
-                │    │         └── xy.y:16 = k:8 [outer=(8,16), constraints=(/8: (/NULL - ]; /16: (/NULL - ]), fd=(8)==(16), (16)==(8)]
+                │    │         └── xy.y:16 = k:8 [outer=(8,16), constraints=(/8: (/NULL - ]; /16: (/NULL - ]), fd=(8)==(8,16)]
                 │    └── aggregations
                 │         └── const-agg [as=xy.y:16, outer=(16)]
                 │              └── xy.y:16
@@ -499,7 +499,7 @@ semi-join (hash)
  ├── scan a2
  │    └── columns: a2.i:9
  └── filters
-      └── a1.i:2 = a2.i:9 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(9), (9)==(2)]
+      └── a1.i:2 = a2.i:9 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(2,9)]
 
 # Don't introduce a limit when the subquery has one row.
 norm expect-not=IntroduceExistsLimit
@@ -539,7 +539,7 @@ semi-join (hash)
  ├── scan a2
  │    └── columns: a2.i:9
  └── filters
-      └── a1.i:2 = a2.i:9 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(9), (9)==(2)]
+      └── a1.i:2 = a2.i:9 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(2,9)]
 
 norm expect=EliminateExistsLimit
 SELECT * FROM a a1 WHERE NOT EXISTS(SELECT i FROM a a2 where a1.i = a2.i LIMIT 1)
@@ -555,7 +555,7 @@ anti-join (hash)
  ├── scan a2
  │    └── columns: a2.i:9
  └── filters
-      └── a1.i:2 = a2.i:9 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(9), (9)==(2)]
+      └── a1.i:2 = a2.i:9 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(2,9)]
 
 # Don't eliminate a non-positive limit.
 norm expect-not=EliminateExistsLimit
@@ -1275,7 +1275,7 @@ project
       │    └── projections
       │         └── (column2:9, column1:8) [as=column10:10, outer=(8,9)]
       └── filters
-           └── column11:11 = column10:10 [outer=(10,11), immutable, constraints=(/10: (/NULL - ]; /11: (/NULL - ]), fd=(10)==(11), (11)==(10)]
+           └── column11:11 = column10:10 [outer=(10,11), immutable, constraints=(/10: (/NULL - ]; /11: (/NULL - ]), fd=(10)==(10,11)]
 
 # --------------------------------------------------
 # SimplifyEqualsAnyTuple
@@ -1445,12 +1445,12 @@ project
  │    ├── columns: b.k:1!null a.k:8!null array_agg:17!null
  │    ├── grouping columns: b.k:1!null
  │    ├── key: (8)
- │    ├── fd: (1)==(8), (8)==(1), (8)-->(17), (1)-->(8,17)
+ │    ├── fd: (1)==(1,8), (8)-->(17), (1)-->(8,17)
  │    ├── inner-join (hash)
  │    │    ├── columns: b.k:1!null a.k:8!null
  │    │    ├── multiplicity: left-rows(exactly-one), right-rows(exactly-one)
  │    │    ├── key: (8)
- │    │    ├── fd: (1)==(8), (8)==(1)
+ │    │    ├── fd: (1)==(1,8)
  │    │    ├── scan b
  │    │    │    ├── columns: b.k:1!null
  │    │    │    └── key: (1)
@@ -1458,7 +1458,7 @@ project
  │    │    │    ├── columns: a.k:8!null
  │    │    │    └── key: (8)
  │    │    └── filters
- │    │         └── a.k:8 = b.k:1 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(8), (8)==(1)]
+ │    │         └── a.k:8 = b.k:1 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(1,8)]
  │    └── aggregations
  │         ├── array-agg [as=array_agg:17, outer=(8)]
  │         │    └── a.k:8
@@ -1497,7 +1497,7 @@ project
  │    │         │    ├── key: (8)
  │    │         │    └── fd: (8)-->(9)
  │    │         └── filters
- │    │              └── a.i:9 = b.i:2 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(9), (9)==(2)]
+ │    │              └── a.i:9 = b.i:2 [outer=(2,9), constraints=(/2: (/NULL - ]; /9: (/NULL - ]), fd=(2)==(2,9)]
  │    └── aggregations
  │         ├── array-agg [as=array_agg:17, outer=(8)]
  │         │    └── a.k:8
@@ -1570,7 +1570,7 @@ project
  │    │    ├── columns: c.k:1!null b.k:8!null array:22 canary:25!null
  │    │    ├── multiplicity: left-rows(exactly-one), right-rows(exactly-one)
  │    │    ├── key: (8)
- │    │    ├── fd: ()-->(22,25), (1)==(8), (8)==(1)
+ │    │    ├── fd: ()-->(22,25), (1)==(1,8)
  │    │    ├── scan c
  │    │    │    ├── columns: c.k:1!null
  │    │    │    └── key: (1)
@@ -1590,7 +1590,7 @@ project
  │    │    │              │         └── key: (15)
  │    │    │              └── 1
  │    │    └── filters
- │    │         └── b.k:8 = c.k:1 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(8), (8)==(1)]
+ │    │         └── b.k:8 = c.k:1 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(1,8)]
  │    └── aggregations
  │         ├── array-agg [as=array_agg:26, outer=(22)]
  │         │    └── array:22
@@ -1646,12 +1646,12 @@ project
  │    │    │    │    │    │    │    ├── columns: b.k:8!null
  │    │    │    │    │    │    │    └── key: (8)
  │    │    │    │    │    │    └── filters
- │    │    │    │    │    │         └── b.k:8 = c.k:1 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(8), (8)==(1)]
+ │    │    │    │    │    │         └── b.k:8 = c.k:1 [outer=(1,8), constraints=(/1: (/NULL - ]; /8: (/NULL - ]), fd=(1)==(1,8)]
  │    │    │    │    │    ├── scan a
  │    │    │    │    │    │    ├── columns: a.k:15!null
  │    │    │    │    │    │    └── key: (15)
  │    │    │    │    │    └── filters
- │    │    │    │    │         └── a.k:15 = b.k:8 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(15), (15)==(8)]
+ │    │    │    │    │         └── a.k:15 = b.k:8 [outer=(8,15), constraints=(/8: (/NULL - ]; /15: (/NULL - ]), fd=(8)==(8,15)]
  │    │    │    │    └── aggregations
  │    │    │    │         ├── array-agg [as=array_agg:24, outer=(15)]
  │    │    │    │         │    └── a.k:15
@@ -1766,29 +1766,29 @@ project
  │    │    │    │    │    ├── columns: inhrelid:31 inhparent:32 inhseqno:33 c.oid:36 c.relname:37
  │    │    │    │    │    ├── outer: (1)
  │    │    │    │    │    ├── cardinality: [1 - ]
- │    │    │    │    │    ├── fd: (32)==(36), (36)==(32)
+ │    │    │    │    │    ├── fd: (32)==(32,36)
  │    │    │    │    │    ├── ordering: +33 opt(31) [actual: +33]
  │    │    │    │    │    └── left-join (cross)
  │    │    │    │    │         ├── columns: inhrelid:31 inhparent:32 inhseqno:33 c.oid:36 c.relname:37
  │    │    │    │    │         ├── outer: (1)
  │    │    │    │    │         ├── cardinality: [1 - ]
  │    │    │    │    │         ├── multiplicity: left-rows(one-or-more), right-rows(zero-or-one)
- │    │    │    │    │         ├── fd: (32)==(36), (36)==(32)
+ │    │    │    │    │         ├── fd: (32)==(32,36)
  │    │    │    │    │         ├── values
  │    │    │    │    │         │    ├── cardinality: [1 - 1]
  │    │    │    │    │         │    ├── key: ()
  │    │    │    │    │         │    └── ()
  │    │    │    │    │         ├── inner-join (hash)
  │    │    │    │    │         │    ├── columns: inhrelid:31 inhparent:32!null inhseqno:33 c.oid:36!null c.relname:37!null
- │    │    │    │    │         │    ├── fd: (32)==(36), (36)==(32)
+ │    │    │    │    │         │    ├── fd: (32)==(32,36)
  │    │    │    │    │         │    ├── scan i
  │    │    │    │    │         │    │    └── columns: inhrelid:31 inhparent:32 inhseqno:33
  │    │    │    │    │         │    ├── scan c
  │    │    │    │    │         │    │    └── columns: c.oid:36 c.relname:37!null
  │    │    │    │    │         │    └── filters
- │    │    │    │    │         │         └── c.oid:36 = inhparent:32 [outer=(32,36), constraints=(/32: (/NULL - ]; /36: (/NULL - ]), fd=(32)==(36), (36)==(32)]
+ │    │    │    │    │         │         └── c.oid:36 = inhparent:32 [outer=(32,36), constraints=(/32: (/NULL - ]; /36: (/NULL - ]), fd=(32)==(32,36)]
  │    │    │    │    │         └── filters
- │    │    │    │    │              └── inhrelid:31 = rel.oid:1 [outer=(1,31), constraints=(/1: (/NULL - ]; /31: (/NULL - ]), fd=(1)==(31), (31)==(1)]
+ │    │    │    │    │              └── inhrelid:31 = rel.oid:1 [outer=(1,31), constraints=(/1: (/NULL - ]; /31: (/NULL - ]), fd=(1)==(1,31)]
  │    │    │    │    └── aggregations
  │    │    │    │         ├── array-agg [as=array_agg:68, outer=(37)]
  │    │    │    │         │    └── c.relname:37

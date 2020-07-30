@@ -235,7 +235,7 @@ Initial expression
         │    ├── key: (5)
         │    └── fd: (5)-->(6-8)
         └── filters
-             └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+             └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
                   ├── variable: customer_id:2 [type=int]
                   └── variable: customers.id:5 [type=int]
 ================================================================================
@@ -269,7 +269,7 @@ NormalizeInConst
          │    ├── key: (5)
          │    └── fd: (5)-->(6-8)
          └── filters
-              └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+              └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
                    ├── variable: customer_id:2 [type=int]
                    └── variable: customers.id:5 [type=int]
 ================================================================================
@@ -305,7 +305,7 @@ PruneJoinLeftCols
          │    ├── key: (5)
          │    └── fd: (5)-->(6-8)
          └── filters
-              └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+              └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
                    ├── variable: customer_id:2 [type=int]
                    └── variable: customers.id:5 [type=int]
 ================================================================================
@@ -341,7 +341,7 @@ PruneJoinRightCols
   -      │    └── fd: (5)-->(6-8)
   +      │    └── fd: (5)-->(6,7)
          └── filters
-              └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+              └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
                    ├── variable: customer_id:2 [type=int]
                    └── variable: customers.id:5 [type=int]
 ================================================================================
@@ -375,7 +375,7 @@ EliminateProject
   -      │    ├── key: (5)
   -      │    └── fd: (5)-->(6,7)
   -      └── filters
-  -           └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+  -           └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
   -                ├── variable: customer_id:2 [type=int]
   -                └── variable: customers.id:5 [type=int]
   + ├── scan orders
@@ -394,7 +394,7 @@ EliminateProject
   + │    ├── key: (5)
   + │    └── fd: (5)-->(6,7)
   + └── filters
-  +      └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+  +      └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
   +           ├── variable: customer_id:2 [type=int]
   +           └── variable: customers.id:5 [type=int]
 --------------------------------------------------------------------------------
@@ -432,7 +432,7 @@ CommuteLeftJoin (higher cost)
   - │    ├── key: (5)
   - │    └── fd: (5)-->(6,7)
     └── filters
-         └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+         └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
               ├── variable: customer_id:2 [type=int]
               └── variable: customers.id:5 [type=int]
 --------------------------------------------------------------------------------
@@ -465,7 +465,7 @@ GenerateLookupJoins (higher cost)
   - │    ├── key: (5)
   - │    └── fd: (5)-->(6,7)
   - └── filters
-  -      └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+  -      └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
   -           ├── variable: customer_id:2 [type=int]
   -           └── variable: customers.id:5 [type=int]
   + └── filters (true)
@@ -537,7 +537,7 @@ Final best expression
    │    ├── key: (5)
    │    └── fd: (5)-->(6,7)
    └── filters
-        └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+        └── eq [type=bool, outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
              ├── variable: customer_id:2 [type=int]
              └── variable: customers.id:5 [type=int]
 

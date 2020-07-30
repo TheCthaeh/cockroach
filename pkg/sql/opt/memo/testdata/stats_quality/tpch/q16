@@ -75,14 +75,14 @@ sort
       │         ├── columns: ps_partkey:1(int!null) ps_suppkey:2(int!null) p_partkey:7(int!null) p_brand:10(char!null) p_type:11(varchar!null) p_size:12(int!null)
       │         ├── stats: [rows=9606.24468, distinct(1)=3555.43444, null(1)=0, distinct(2)=6153.37633, null(2)=0, distinct(7)=3555.43444, null(7)=0, distinct(10)=8.33333333, null(10)=0, distinct(11)=150, null(11)=0, distinct(12)=8, null(12)=0, distinct(10-12)=3315.43068, null(10-12)=0, distinct(2,10-12)=9606.24468, null(2,10-12)=0]
       │         ├── key: (2,7)
-      │         ├── fd: (7)-->(10-12), (1)==(7), (7)==(1)
+      │         ├── fd: (7)-->(10-12), (1)==(1,7)
       │         ├── inner-join (lookup partsupp)
       │         │    ├── save-table-name: q16_lookup_join_5
       │         │    ├── columns: ps_partkey:1(int!null) ps_suppkey:2(int!null) p_partkey:7(int!null) p_brand:10(char!null) p_type:11(varchar!null) p_size:12(int!null)
       │         │    ├── key columns: [7] = [1]
       │         │    ├── stats: [rows=14276.4012, distinct(1)=3555.43444, null(1)=0, distinct(2)=7567.69437, null(2)=0, distinct(7)=3555.43444, null(7)=0, distinct(10)=8.33333333, null(10)=0, distinct(11)=150, null(11)=0, distinct(12)=8, null(12)=0]
       │         │    ├── key: (2,7)
-      │         │    ├── fd: (7)-->(10-12), (1)==(7), (7)==(1)
+      │         │    ├── fd: (7)-->(10-12), (1)==(1,7)
       │         │    ├── select
       │         │    │    ├── save-table-name: q16_select_6
       │         │    │    ├── columns: p_partkey:7(int!null) p_brand:10(char!null) p_type:11(varchar!null) p_size:12(int!null)
@@ -119,7 +119,7 @@ sort
       │         │    └── filters
       │         │         └── s_comment:23 LIKE '%Customer%Complaints%' [type=bool, outer=(23), constraints=(/23: (/NULL - ])]
       │         └── filters
-      │              └── ps_suppkey:2 = s_suppkey:17 [type=bool, outer=(2,17), constraints=(/2: (/NULL - ]; /17: (/NULL - ]), fd=(2)==(17), (17)==(2)]
+      │              └── ps_suppkey:2 = s_suppkey:17 [type=bool, outer=(2,17), constraints=(/2: (/NULL - ]; /17: (/NULL - ]), fd=(2)==(2,17)]
       └── aggregations
            └── count-rows [as=count:25, type=int]
 

@@ -168,7 +168,7 @@ distinct-on
       ├── columns: id:1(int!null) title:4(string!null) tag_list:6(string[]) upper:11(string!null) unnest:12(string) generate_series:13(int) lower:14(string)
       ├── immutable
       ├── stats: [rows=9.9, distinct(1)=9.85601173, null(1)=0, distinct(4)=9.9, null(4)=0, distinct(11)=9.9, null(11)=0]
-      ├── fd: (1)-->(4,6), (4)==(11), (11)==(4)
+      ├── fd: (1)-->(4,6), (4)==(4,11)
       ├── project-set
       │    ├── columns: id:1(int!null) title:4(string) tag_list:6(string[]) upper:11(string) unnest:12(string) generate_series:13(int) lower:14(string)
       │    ├── immutable
@@ -185,7 +185,7 @@ distinct-on
       │         ├── generate_series(0, 1) [type=int, immutable]
       │         └── 'abc' [type=string]
       └── filters
-           └── title:4 = upper:11 [type=bool, outer=(4,11), constraints=(/4: (/NULL - ]; /11: (/NULL - ]), fd=(4)==(11), (11)==(4)]
+           └── title:4 = upper:11 [type=bool, outer=(4,11), constraints=(/4: (/NULL - ]; /11: (/NULL - ]), fd=(4)==(4,11)]
 
 opt
 SELECT id FROM articles WHERE title = ANY(
@@ -202,7 +202,7 @@ distinct-on
       ├── columns: id:1(int!null) title:4(string!null) tag_list:6(string[]) upper:11(string) unnest:12(string!null) generate_series:13(int) lower:14(string)
       ├── immutable
       ├── stats: [rows=14.0014286, distinct(1)=13.9135391, null(1)=0, distinct(4)=14.0014286, null(4)=0, distinct(12)=14.0014286, null(12)=0]
-      ├── fd: (1)-->(4,6), (4)==(12), (12)==(4)
+      ├── fd: (1)-->(4,6), (4)==(4,12)
       ├── project-set
       │    ├── columns: id:1(int!null) title:4(string) tag_list:6(string[]) upper:11(string) unnest:12(string) generate_series:13(int) lower:14(string)
       │    ├── immutable
@@ -219,7 +219,7 @@ distinct-on
       │         ├── generate_series(0, 1) [type=int, immutable]
       │         └── 'abc' [type=string]
       └── filters
-           └── title:4 = unnest:12 [type=bool, outer=(4,12), constraints=(/4: (/NULL - ]; /12: (/NULL - ]), fd=(4)==(12), (12)==(4)]
+           └── title:4 = unnest:12 [type=bool, outer=(4,12), constraints=(/4: (/NULL - ]; /12: (/NULL - ]), fd=(4)==(4,12)]
 
 opt
 SELECT id FROM articles WHERE id = ANY(
@@ -236,7 +236,7 @@ distinct-on
       ├── columns: id:1(int!null) title:4(string) tag_list:6(string[]) upper:11(string) unnest:12(string) generate_series:13(int!null) lower:14(string)
       ├── immutable
       ├── stats: [rows=9.9, distinct(1)=6, null(1)=0, distinct(13)=6, null(13)=0]
-      ├── fd: (1)-->(4,6), (1)==(13), (13)==(1)
+      ├── fd: (1)-->(4,6), (1)==(1,13)
       ├── project-set
       │    ├── columns: id:1(int!null) title:4(string) tag_list:6(string[]) upper:11(string) unnest:12(string) generate_series:13(int) lower:14(string)
       │    ├── immutable
@@ -253,7 +253,7 @@ distinct-on
       │         ├── generate_series(0, 1) [type=int, immutable]
       │         └── 'abc' [type=string]
       └── filters
-           └── id:1 = generate_series:13 [type=bool, outer=(1,13), constraints=(/1: (/NULL - ]; /13: (/NULL - ]), fd=(1)==(13), (13)==(1)]
+           └── id:1 = generate_series:13 [type=bool, outer=(1,13), constraints=(/1: (/NULL - ]; /13: (/NULL - ]), fd=(1)==(1,13)]
 
 opt
 SELECT id FROM articles WHERE title = ANY(
@@ -270,7 +270,7 @@ distinct-on
       ├── columns: id:1(int!null) title:4(string!null) tag_list:6(string[]) upper:11(string) unnest:12(string) generate_series:13(int) lower:14(string!null)
       ├── immutable
       ├── stats: [rows=9.9, distinct(1)=9.85601173, null(1)=0, distinct(4)=1e-10, null(4)=0, distinct(14)=1e-10, null(14)=0]
-      ├── fd: (1)-->(4,6), (4)==(14), (14)==(4)
+      ├── fd: (1)-->(4,6), (4)==(4,14)
       ├── project-set
       │    ├── columns: id:1(int!null) title:4(string) tag_list:6(string[]) upper:11(string) unnest:12(string) generate_series:13(int) lower:14(string)
       │    ├── immutable
@@ -287,4 +287,4 @@ distinct-on
       │         ├── generate_series(0, 1) [type=int, immutable]
       │         └── 'abc' [type=string]
       └── filters
-           └── title:4 = lower:14 [type=bool, outer=(4,14), constraints=(/4: (/NULL - ]; /14: (/NULL - ]), fd=(4)==(14), (14)==(4)]
+           └── title:4 = lower:14 [type=bool, outer=(4,14), constraints=(/4: (/NULL - ]; /14: (/NULL - ]), fd=(4)==(4,14)]

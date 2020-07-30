@@ -175,8 +175,8 @@ sort
       │    │    │         └── ordering: +27 opt(26) [actual: +27]
       │    │    └── filters (true)
       │    └── filters
-      │         ├── c.oid:31 = attcollation:20 [outer=(20,31), constraints=(/20: (/NULL - ]; /31: (/NULL - ]), fd=(20)==(31), (31)==(20)]
-      │         └── t.oid:39 = atttypid:3 [outer=(3,39), constraints=(/3: (/NULL - ]; /39: (/NULL - ]), fd=(3)==(39), (39)==(3)]
+      │         ├── c.oid:31 = attcollation:20 [outer=(20,31), constraints=(/20: (/NULL - ]; /31: (/NULL - ]), fd=(20)==(20,31)]
+      │         └── t.oid:39 = atttypid:3 [outer=(3,39), constraints=(/3: (/NULL - ]; /39: (/NULL - ]), fd=(3)==(3,39)]
       └── projections
            ├── format_type(atttypid:3, atttypmod:9) [as=format_type:71, outer=(3,9), stable]
            ├── pg_get_expr(adbin:28, adrelid:26) [as=pg_get_expr:72, outer=(26,28), stable]

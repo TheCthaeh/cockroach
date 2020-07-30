@@ -523,14 +523,14 @@ project
  └── select
       ├── columns: k:1!null u:2!null v:3!null
       ├── key: (1)
-      ├── fd: (1)-->(2,3), (3)-->(1), (2)==(3), (3)==(2)
+      ├── fd: (1)-->(2,3), (3)-->(1), (2)==(2,3)
       ├── scan a@u
       │    ├── columns: k:1!null u:2!null v:3
       │    ├── constraint: /2/1: (/NULL - ]
       │    ├── key: (1)
       │    └── fd: (1)-->(2,3), (3)~~>(1,2)
       └── filters
-           └── u:2 = v:3 [outer=(2,3), constraints=(/2: (/NULL - ]; /3: (/NULL - ]), fd=(2)==(3), (3)==(2)]
+           └── u:2 = v:3 [outer=(2,3), constraints=(/2: (/NULL - ]; /3: (/NULL - ]), fd=(2)==(2,3)]
 
 # Don't push constraint into already limited scan.
 opt
@@ -2324,7 +2324,7 @@ project
            ├── columns: d.k:1!null d.u:2!null d.v:3 a.u:7!null
            ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
            ├── key: (1)
-           ├── fd: (1)-->(2,3), (2)==(7), (7)==(2)
+           ├── fd: (1)-->(2,3), (2)==(2,7)
            ├── distinct-on
            │    ├── columns: d.k:1!null d.u:2 d.v:3
            │    ├── grouping columns: d.k:1!null
@@ -2366,7 +2366,7 @@ project
            │         ├── columns: a.u:7
            │         └── ordering: +7
            └── filters
-                └── a.u:7 = d.u:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+                └── a.u:7 = d.u:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
 
 # Correlated subquery with references to outer columns not in the scan columns.
 opt expect=SplitDisjunction
@@ -2383,7 +2383,7 @@ project
            ├── columns: d.k:1!null d.u:2 d.v:3 w:4!null a.u:7!null
            ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
            ├── key: (1)
-           ├── fd: (1)-->(2-4), (4)==(7), (7)==(4)
+           ├── fd: (1)-->(2-4), (4)==(4,7)
            ├── distinct-on
            │    ├── columns: d.k:1!null d.u:2 d.v:3 w:4
            │    ├── grouping columns: d.k:1!null
@@ -2427,7 +2427,7 @@ project
            │         ├── columns: a.u:7
            │         └── ordering: +7
            └── filters
-                └── a.u:7 = w:4 [outer=(4,7), constraints=(/4: (/NULL - ]; /7: (/NULL - ]), fd=(4)==(7), (7)==(4)]
+                └── a.u:7 = w:4 [outer=(4,7), constraints=(/4: (/NULL - ]; /7: (/NULL - ]), fd=(4)==(4,7)]
 
 # Apply when outer columns of both sides of OR are a subset of index columns.
 opt expect=SplitDisjunction
@@ -3304,7 +3304,7 @@ project
  └── inner-join (hash)
       ├── columns: d.u:2!null d.v:3 a.u:7!null
       ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
-      ├── fd: (2)==(7), (7)==(2)
+      ├── fd: (2)==(2,7)
       ├── project
       │    ├── columns: d.u:2 d.v:3
       │    └── distinct-on
@@ -3348,7 +3348,7 @@ project
       │         ├── columns: a.u:7
       │         └── ordering: +7
       └── filters
-           └── a.u:7 = d.u:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
+           └── a.u:7 = d.u:2 [outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(2,7)]
 
 # Correlated subquery with references to outer columns not in the scan columns.
 opt expect=SplitDisjunctionAddKey
@@ -3361,7 +3361,7 @@ project
       └── inner-join (hash)
            ├── columns: d.u:2 d.v:3 w:4!null a.u:7!null
            ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
-           ├── fd: (4)==(7), (7)==(4)
+           ├── fd: (4)==(4,7)
            ├── project
            │    ├── columns: d.u:2 d.v:3 w:4
            │    └── distinct-on
@@ -3407,7 +3407,7 @@ project
            │         ├── columns: a.u:7
            │         └── ordering: +7
            └── filters
-                └── a.u:7 = w:4 [outer=(4,7), constraints=(/4: (/NULL - ]; /7: (/NULL - ]), fd=(4)==(7), (7)==(4)]
+                └── a.u:7 = w:4 [outer=(4,7), constraints=(/4: (/NULL - ]; /7: (/NULL - ]), fd=(4)==(4,7)]
 
 # Use rowid when there is no explicit primary key.
 opt expect=SplitDisjunctionAddKey

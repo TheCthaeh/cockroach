@@ -133,7 +133,7 @@ index-join a
  ├── columns: k:1(int!null) i:2(int) s:3(string!null) t:4(string!null)
  ├── stats: [rows=1.04895, distinct(3)=1.04895, null(3)=0, distinct(4)=1.04895, null(4)=0, distinct(3,4)=1.04895, null(3,4)=0]
  ├── key: (1)
- ├── fd: (1)-->(2-4), (3)==(4), (4)==(3)
+ ├── fd: (1)-->(2-4), (3)==(3,4)
  └── select
       ├── columns: k:1(int!null) s:3(string!null) t:4(string!null)
       ├── stats: [rows=1.0395, distinct(3)=1.0395, null(3)=0, distinct(4)=1.0395, null(4)=0]

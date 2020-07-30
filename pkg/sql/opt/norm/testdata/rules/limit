@@ -656,31 +656,31 @@ ordinality
  ├── columns: k:1!null i:2!null f:3!null s:4 j:5 ordinality:7!null
  ├── cardinality: [0 - 10]
  ├── key: (1)
- ├── fd: (1)-->(2-5,7), (2)==(3), (3)==(2), (7)-->(1-5)
+ ├── fd: (1)-->(2-5,7), (2)==(2,3), (7)-->(1-5)
  ├── ordering: +(2|3) [actual: +2]
  └── limit
       ├── columns: k:1!null i:2!null f:3!null s:4 j:5
       ├── internal-ordering: +(2|3),+4
       ├── cardinality: [0 - 10]
       ├── key: (1)
-      ├── fd: (1)-->(2-5), (2)==(3), (3)==(2)
+      ├── fd: (1)-->(2-5), (2)==(2,3)
       ├── ordering: +(2|3),+4 [actual: +2,+4]
       ├── sort
       │    ├── columns: k:1!null i:2!null f:3!null s:4 j:5
       │    ├── key: (1)
-      │    ├── fd: (1)-->(2-5), (2)==(3), (3)==(2)
+      │    ├── fd: (1)-->(2-5), (2)==(2,3)
       │    ├── ordering: +(2|3),+4 [actual: +2,+4]
       │    ├── limit hint: 10.00
       │    └── select
       │         ├── columns: k:1!null i:2!null f:3!null s:4 j:5
       │         ├── key: (1)
-      │         ├── fd: (1)-->(2-5), (2)==(3), (3)==(2)
+      │         ├── fd: (1)-->(2-5), (2)==(2,3)
       │         ├── scan a
       │         │    ├── columns: k:1!null i:2 f:3 s:4 j:5
       │         │    ├── key: (1)
       │         │    └── fd: (1)-->(2-5)
       │         └── filters
-      │              └── i:2 = f:3 [outer=(2,3), constraints=(/2: (/NULL - ]; /3: (/NULL - ]), fd=(2)==(3), (3)==(2)]
+      │              └── i:2 = f:3 [outer=(2,3), constraints=(/2: (/NULL - ]; /3: (/NULL - ]), fd=(2)==(2,3)]
       └── 10
 
 norm expect-not=PushLimitIntoOrdinality
@@ -746,7 +746,7 @@ inner-join (hash)
  ├── cardinality: [0 - 10]
  ├── multiplicity: left-rows(exactly-one), right-rows(zero-or-more)
  ├── key: (1)
- ├── fd: (1)-->(2,3), (5)-->(6), (3)==(5), (5)==(3)
+ ├── fd: (1)-->(2,3), (5)-->(6), (3)==(3,5)
  ├── limit
  │    ├── columns: k:1!null kvr_fk.v:2 r:3!null
  │    ├── cardinality: [0 - 10]
@@ -763,7 +763,7 @@ inner-join (hash)
  │    ├── key: (5)
  │    └── fd: (5)-->(6)
  └── filters
-      └── r:3 = u:5 [outer=(3,5), constraints=(/3: (/NULL - ]; /5: (/NULL - ]), fd=(3)==(5), (5)==(3)]
+      └── r:3 = u:5 [outer=(3,5), constraints=(/3: (/NULL - ]; /5: (/NULL - ]), fd=(3)==(3,5)]
 
 # LeftJoin case.
 norm expect=PushLimitIntoJoinLeft
@@ -791,7 +791,7 @@ left-join (hash)
  │    ├── key: (4)
  │    └── fd: (4)-->(5)
  └── filters
-      └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+      └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
 
 # InnerJoin case for PushLimitIntoJoinRight.
 norm expect=PushLimitIntoJoinRight
@@ -802,7 +802,7 @@ inner-join (hash)
  ├── cardinality: [0 - 10]
  ├── multiplicity: left-rows(zero-or-more), right-rows(exactly-one)
  ├── key: (4)
- ├── fd: (1)-->(2), (4)-->(5,6), (1)==(6), (6)==(1)
+ ├── fd: (1)-->(2), (4)-->(5,6), (1)==(1,6)
  ├── scan uv
  │    ├── columns: u:1!null uv.v:2
  │    ├── key: (1)
@@ -819,7 +819,7 @@ inner-join (hash)
  │    │    └── limit hint: 10.00
  │    └── 10
  └── filters
-      └── u:1 = r:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+      └── u:1 = r:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
 
 # Ordering can be pushed down.
 norm expect=PushLimitIntoJoinLeft
@@ -855,7 +855,7 @@ sort
       │    ├── key: (4)
       │    └── fd: (4)-->(5)
       └── filters
-           └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+           └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
 
 norm expect=PushLimitIntoJoinLeft
 SELECT * FROM ab LEFT JOIN uv ON a = u ORDER BY b LIMIT 10
@@ -894,7 +894,7 @@ sort
       │    ├── key: (4)
       │    └── fd: (4)-->(5)
       └── filters
-           └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+           └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
 
 # Ordering on u is not equivalent to ordering on a because of NULLs; it cannot
 # be pushed down.
@@ -928,7 +928,7 @@ limit
  │         │    ├── key: (4)
  │         │    └── fd: (4)-->(5)
  │         └── filters
- │              └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+ │              └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
  └── 10
 
 # Ordering cannot be pushed down.
@@ -962,7 +962,7 @@ limit
  │         │    ├── key: (4)
  │         │    └── fd: (4)-->(5)
  │         └── filters
- │              └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+ │              └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
  └── 10
 
 norm expect-not=PushLimitIntoJoinLeft
@@ -994,7 +994,7 @@ limit
  │         │    ├── key: (4)
  │         │    └── fd: (4)-->(5)
  │         └── filters
- │              └── b:2 = v:5 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
+ │              └── b:2 = v:5 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(2,5)]
  └── 10
 
 norm expect-not=PushLimitIntoJoinLeft
@@ -1027,7 +1027,7 @@ limit
  │         │    ├── key: (4)
  │         │    └── fd: (4)-->(5)
  │         └── filters
- │              └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+ │              └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
  └── 10
 
 # Rule should not fire if the input's cardinality is already less than the
@@ -1057,7 +1057,7 @@ left-join (hash)
  │    ├── key: (4)
  │    └── fd: (4)-->(5)
  └── filters
-      └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+      └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
 
 # Push the limit even if the input is already limited (but with a higher limit).
 norm expect=PushLimitIntoJoinLeft
@@ -1085,7 +1085,7 @@ left-join (hash)
  │    ├── key: (4)
  │    └── fd: (4)-->(5)
  └── filters
-      └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+      └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
 
 # Don't push negative limits (or we would enter an infinite loop).
 norm expect-not=PushLimitIntoJoinLeft
@@ -1112,7 +1112,7 @@ limit
  │    │    ├── key: (4)
  │    │    └── fd: (4)-->(5)
  │    └── filters
- │         └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+ │         └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
  └── -1
 
 # Don't push limits into an inner join that may not preserve rows.
@@ -1123,12 +1123,12 @@ limit
  ├── columns: a:1!null b:2 u:4!null v:5
  ├── cardinality: [0 - 10]
  ├── key: (4)
- ├── fd: (1)-->(2), (4)-->(5), (1)==(4), (4)==(1)
+ ├── fd: (1)-->(2), (4)-->(5), (1)==(1,4)
  ├── inner-join (hash)
  │    ├── columns: a:1!null b:2 u:4!null v:5
  │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-one)
  │    ├── key: (4)
- │    ├── fd: (1)-->(2), (4)-->(5), (1)==(4), (4)==(1)
+ │    ├── fd: (1)-->(2), (4)-->(5), (1)==(1,4)
  │    ├── limit hint: 10.00
  │    ├── scan ab
  │    │    ├── columns: a:1!null b:2
@@ -1139,7 +1139,7 @@ limit
  │    │    ├── key: (4)
  │    │    └── fd: (4)-->(5)
  │    └── filters
- │         └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+ │         └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
  └── 10
 
 # Don't push a limit into the right side of a LeftJoin.
@@ -1173,7 +1173,7 @@ limit
  │    │    ├── key: (4)
  │    │    └── fd: (4)-->(5,6)
  │    └── filters
- │         └── u:1 = r:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+ │         └── u:1 = r:6 [outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(1,6)]
  └── 10
 
 # Don't push a limit into either side of a FullJoin.
@@ -1200,7 +1200,7 @@ limit
  │    │    ├── key: (4)
  │    │    └── fd: (4)-->(5)
  │    └── filters
- │         └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+ │         └── a:1 = u:4 [outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(1,4)]
  └── 10
 
 # ----------

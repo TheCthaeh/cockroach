@@ -313,14 +313,14 @@ SELECT * FROM a WHERE NOT(i=1) AND NOT(f<>i) AND NOT(i>k) AND NOT(i>=f) AND NOT(
 select
  ├── columns: k:1!null i:2!null f:3!null s:4 j:5
  ├── key: (1)
- ├── fd: (1)-->(2-5), (2)==(3), (3)==(2)
+ ├── fd: (1)-->(2-5), (2)==(2,3)
  ├── scan a
  │    ├── columns: k:1!null i:2 f:3 s:4 j:5
  │    ├── key: (1)
  │    └── fd: (1)-->(2-5)
  └── filters
       ├── (i:2 != 1) AND (i:2 > 1) [outer=(2), constraints=(/2: [/2 - ]; tight)]
-      ├── f:3 = i:2 [outer=(2,3), constraints=(/2: (/NULL - ]; /3: (/NULL - ]), fd=(2)==(3), (3)==(2)]
+      ├── f:3 = i:2 [outer=(2,3), constraints=(/2: (/NULL - ]; /3: (/NULL - ]), fd=(2)==(2,3)]
       ├── i:2 <= k:1 [outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ])]
       ├── i:2 < f:3 [outer=(2,3), constraints=(/2: (/NULL - ]; /3: (/NULL - ])]
       └── f:3 >= 1.0 [outer=(3), constraints=(/3: [/1.0 - ]; tight)]
