@@ -1636,15 +1636,28 @@ SELECT * FROM xysd, uv WHERE (s = 'foo' AND u = 3 AND v = 4) OR (s = 'bar' AND u
 ----
 inner-join (cross)
  ├── columns: x:1(int!null) y:2(int) s:3(string!null) d:4(decimal!null) u:6(int!null) v:7(int!null)
- ├── stats: [rows=11979.6897, distinct(3)=2, null(3)=0, distinct(6)=2, null(6)=0, distinct(7)=2, null(7)=0, distinct(6,7)=2.19138756, null(6,7)=0]
+ ├── stats: [rows=802.26553, distinct(3)=2, null(3)=0, distinct(6)=2, null(6)=0, distinct(7)=2, null(7)=0]
  ├── fd: (1)-->(2-4), (3,4)-->(1,2)
- ├── scan uv
- │    ├── columns: u:6(int) v:7(int!null)
- │    └── stats: [rows=10000, distinct(6)=500, null(6)=0, distinct(7)=100, null(7)=0, distinct(6,7)=550, null(6,7)=0]
- ├── scan xysd
- │    ├── columns: x:1(int!null) y:2(int) s:3(string) d:4(decimal!null)
- │    ├── stats: [rows=5000, distinct(1)=5000, null(1)=0, distinct(3)=10, null(3)=0, distinct(4)=500, null(4)=0]
+ ├── index-join xysd
+ │    ├── columns: x:1(int!null) y:2(int) s:3(string!null) d:4(decimal!null)
+ │    ├── stats: [rows=1000, distinct(1)=1000, null(1)=0, distinct(3)=2, null(3)=0, distinct(4)=446.312909, null(4)=0]
  │    ├── key: (1)
- │    └── fd: (1)-->(2-4), (3,4)~~>(1,2)
+ │    ├── fd: (1)-->(2-4), (3,4)-->(1,2)
+ │    └── scan xysd@secondary
+ │         ├── columns: x:1(int!null) s:3(string!null) d:4(decimal!null)
+ │         ├── constraint: /-3/4
+ │         │    ├── [/'foo' - /'foo']
+ │         │    └── [/'bar' - /'bar']
+ │         ├── stats: [rows=1000, distinct(1)=1000, null(1)=0, distinct(3)=2, null(3)=0, distinct(4)=446.312909, null(4)=0]
+ │         ├── key: (1)
+ │         └── fd: (1)-->(3,4), (3,4)-->(1)
+ ├── select
+ │    ├── columns: u:6(int) v:7(int!null)
+ │    ├── stats: [rows=200, distinct(6)=166.196014, null(6)=0, distinct(7)=2, null(7)=0]
+ │    ├── scan uv
+ │    │    ├── columns: u:6(int) v:7(int!null)
+ │    │    └── stats: [rows=10000, distinct(6)=500, null(6)=0, distinct(7)=100, null(7)=0]
+ │    └── filters
+ │         └── (v:7 = 4) OR (v:7 = 6) [type=bool, outer=(7), constraints=(/7: [/4 - /4] [/6 - /6]; tight)]
  └── filters
       └── (((s:3 = 'foo') AND (u:6 = 3)) AND (v:7 = 4)) OR (((s:3 = 'bar') AND (u:6 = 5)) AND (v:7 = 6)) [type=bool, outer=(3,6,7), constraints=(/3: [/'bar' - /'bar'] [/'foo' - /'foo']; /6: [/3 - /3] [/5 - /5]; /7: [/4 - /4] [/6 - /6])]

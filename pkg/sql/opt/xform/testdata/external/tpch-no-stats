@@ -696,7 +696,7 @@ group-by
  │         │    ├── fd: (1)-->(4), (26)-->(27), (36)-->(39), (45)-->(46), (50)-->(51), (39)==(50), (50)==(39), (27)==(36), (36)==(27), (9)==(26), (26)==(9), (1)==(11), (11)==(1), (4)==(45), (45)==(4)
  │         │    ├── inner-join (hash)
  │         │    │    ├── columns: s_suppkey:1!null s_nationkey:4!null l_orderkey:9!null l_suppkey:11!null l_extendedprice:14!null l_discount:15!null l_shipdate:19!null o_orderkey:26!null o_custkey:27!null n1.n_nationkey:45!null n1.n_name:46!null
- │         │    │    ├── multiplicity: left-rows(exactly-one), right-rows(zero-or-more)
+ │         │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
  │         │    │    ├── fd: (26)-->(27), (1)-->(4), (45)-->(46), (4)==(45), (45)==(4), (1)==(11), (11)==(1), (9)==(26), (26)==(9)
  │         │    │    ├── inner-join (hash)
  │         │    │    │    ├── columns: l_orderkey:9!null l_suppkey:11!null l_extendedprice:14!null l_discount:15!null l_shipdate:19!null o_orderkey:26!null o_custkey:27!null
@@ -714,41 +714,39 @@ group-by
  │         │    │    │    │    └── fd: (26)-->(27)
  │         │    │    │    └── filters
  │         │    │    │         └── o_orderkey:26 = l_orderkey:9 [outer=(9,26), constraints=(/9: (/NULL - ]; /26: (/NULL - ]), fd=(9)==(26), (26)==(9)]
- │         │    │    ├── inner-join (merge)
+ │         │    │    ├── inner-join (lookup supplier@s_nk)
  │         │    │    │    ├── columns: s_suppkey:1!null s_nationkey:4!null n1.n_nationkey:45!null n1.n_name:46!null
- │         │    │    │    ├── left ordering: +4
- │         │    │    │    ├── right ordering: +45
+ │         │    │    │    ├── key columns: [45] = [4]
  │         │    │    │    ├── key: (1)
  │         │    │    │    ├── fd: (1)-->(4), (45)-->(46), (4)==(45), (45)==(4)
- │         │    │    │    ├── scan supplier@s_nk
- │         │    │    │    │    ├── columns: s_suppkey:1!null s_nationkey:4!null
- │         │    │    │    │    ├── key: (1)
- │         │    │    │    │    ├── fd: (1)-->(4)
- │         │    │    │    │    └── ordering: +4
- │         │    │    │    ├── scan n1
+ │         │    │    │    ├── select
  │         │    │    │    │    ├── columns: n1.n_nationkey:45!null n1.n_name:46!null
  │         │    │    │    │    ├── key: (45)
  │         │    │    │    │    ├── fd: (45)-->(46)
- │         │    │    │    │    └── ordering: +45
+ │         │    │    │    │    ├── scan n1
+ │         │    │    │    │    │    ├── columns: n1.n_nationkey:45!null n1.n_name:46!null
+ │         │    │    │    │    │    ├── key: (45)
+ │         │    │    │    │    │    └── fd: (45)-->(46)
+ │         │    │    │    │    └── filters
+ │         │    │    │    │         └── (n1.n_name:46 = 'FRANCE') OR (n1.n_name:46 = 'GERMANY') [outer=(46), constraints=(/46: [/'FRANCE' - /'FRANCE'] [/'GERMANY' - /'GERMANY']; tight)]
  │         │    │    │    └── filters (true)
  │         │    │    └── filters
  │         │    │         └── s_suppkey:1 = l_suppkey:11 [outer=(1,11), constraints=(/1: (/NULL - ]; /11: (/NULL - ]), fd=(1)==(11), (11)==(1)]
- │         │    ├── inner-join (merge)
+ │         │    ├── inner-join (lookup customer@c_nk)
  │         │    │    ├── columns: c_custkey:36!null c_nationkey:39!null n2.n_nationkey:50!null n2.n_name:51!null
- │         │    │    ├── left ordering: +39
- │         │    │    ├── right ordering: +50
+ │         │    │    ├── key columns: [50] = [39]
  │         │    │    ├── key: (36)
  │         │    │    ├── fd: (36)-->(39), (50)-->(51), (39)==(50), (50)==(39)
- │         │    │    ├── scan customer@c_nk
- │         │    │    │    ├── columns: c_custkey:36!null c_nationkey:39!null
- │         │    │    │    ├── key: (36)
- │         │    │    │    ├── fd: (36)-->(39)
- │         │    │    │    └── ordering: +39
- │         │    │    ├── scan n2
+ │         │    │    ├── select
  │         │    │    │    ├── columns: n2.n_nationkey:50!null n2.n_name:51!null
  │         │    │    │    ├── key: (50)
  │         │    │    │    ├── fd: (50)-->(51)
- │         │    │    │    └── ordering: +50
+ │         │    │    │    ├── scan n2
+ │         │    │    │    │    ├── columns: n2.n_nationkey:50!null n2.n_name:51!null
+ │         │    │    │    │    ├── key: (50)
+ │         │    │    │    │    └── fd: (50)-->(51)
+ │         │    │    │    └── filters
+ │         │    │    │         └── (n2.n_name:51 = 'GERMANY') OR (n2.n_name:51 = 'FRANCE') [outer=(51), constraints=(/51: [/'FRANCE' - /'FRANCE'] [/'GERMANY' - /'GERMANY']; tight)]
  │         │    │    └── filters (true)
  │         │    └── filters
  │         │         ├── ((n1.n_name:46 = 'FRANCE') AND (n2.n_name:51 = 'GERMANY')) OR ((n1.n_name:46 = 'GERMANY') AND (n2.n_name:51 = 'FRANCE')) [outer=(46,51), constraints=(/46: [/'FRANCE' - /'FRANCE'] [/'GERMANY' - /'GERMANY']; /51: [/'FRANCE' - /'FRANCE'] [/'GERMANY' - /'GERMANY'])]

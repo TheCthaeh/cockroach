@@ -139,11 +139,6 @@ func (c *CustomFuncs) ExtractUndeterminedConditions(
 	return newFilters
 }
 
-// OrderingSucceeded returns true if an OrderingChoice is not nil.
-func (c *CustomFuncs) OrderingSucceeded(result *physical.OrderingChoice) bool {
-	return result != nil
-}
-
 // DerefOrderingChoice returns an OrderingChoice from a pointer.
 func (c *CustomFuncs) DerefOrderingChoice(result *physical.OrderingChoice) physical.OrderingChoice {
 	return *result

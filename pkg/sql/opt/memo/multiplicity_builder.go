@@ -58,7 +58,7 @@ func GetJoinMultiplicity(in RelExpr) props.JoinMultiplicity {
 // because DeriveJoinMultiplicityFromInputs cannot take advantage of a
 // previously calculated JoinMultiplicity. The UnfilteredCols Relational
 // property is used in calculating the JoinMultiplicity, and is lazily derived
-// by a call to deriveUnfilteredCols.
+// by a call to DeriveUnfilteredCols.
 func DeriveJoinMultiplicityFromInputs(
 	left, right RelExpr, filters FiltersExpr,
 ) props.JoinMultiplicity {
@@ -71,10 +71,10 @@ func DeriveJoinMultiplicityFromInputs(
 	}
 }
 
-// deriveUnfilteredCols recursively derives the UnfilteredCols field and
+// DeriveUnfilteredCols recursively derives the UnfilteredCols field and
 // populates the props.Relational.Rule.UnfilteredCols field as it goes to
 // make future calls faster.
-func deriveUnfilteredCols(in RelExpr) opt.ColSet {
+func DeriveUnfilteredCols(in RelExpr) opt.ColSet {
 	// If the UnfilteredCols property has already been derived, return it
 	// immediately.
 	relational := in.Relational()
@@ -115,7 +115,7 @@ func deriveUnfilteredCols(in RelExpr) opt.ColSet {
 	case *ProjectExpr:
 		// Project never filters rows, so it passes through unfiltered columns.
 		// Include non-output columns for the same reasons as for the Scan operator.
-		unfilteredCols.UnionWith(deriveUnfilteredCols(t.Input))
+		unfilteredCols.UnionWith(DeriveUnfilteredCols(t.Input))
 
 	case *InnerJoinExpr, *LeftJoinExpr, *FullJoinExpr:
 		left := t.Child(0).(RelExpr)
@@ -125,16 +125,16 @@ func deriveUnfilteredCols(in RelExpr) opt.ColSet {
 		// Use the UnfilteredCols to determine whether unfiltered columns can be
 		// passed through.
 		if multiplicity.JoinPreservesLeftRows(t.Op()) {
-			unfilteredCols.UnionWith(deriveUnfilteredCols(left))
+			unfilteredCols.UnionWith(DeriveUnfilteredCols(left))
 		}
 		if multiplicity.JoinPreservesRightRows(t.Op()) {
-			unfilteredCols.UnionWith(deriveUnfilteredCols(right))
+			unfilteredCols.UnionWith(DeriveUnfilteredCols(right))
 		}
 
 	case *SemiJoinExpr:
 		multiplicity := GetJoinMultiplicity(t)
 		if multiplicity.JoinPreservesLeftRows(t.Op()) {
-			unfilteredCols.UnionWith(deriveUnfilteredCols(t.Left))
+			unfilteredCols.UnionWith(DeriveUnfilteredCols(t.Left))
 		}
 
 	default:
@@ -263,7 +263,7 @@ func filtersMatchAllLeftRows(left, right RelExpr, filters FiltersExpr) bool {
 		return checkForeignKeyCase(
 			left.Memo().Metadata(),
 			left.Relational().NotNullCols,
-			deriveUnfilteredCols(right),
+			DeriveUnfilteredCols(right),
 			filters,
 		)
 	}
@@ -276,7 +276,7 @@ func filtersMatchAllLeftRows(left, right RelExpr, filters FiltersExpr) bool {
 	}
 	// Case 2b.
 	return checkForeignKeyCase(
-		left.Memo().Metadata(), left.Relational().NotNullCols, deriveUnfilteredCols(right), filters)
+		left.Memo().Metadata(), left.Relational().NotNullCols, DeriveUnfilteredCols(right), filters)
 }
 
 // verifyFiltersAreValidEqualities returns true when all of the following
@@ -293,7 +293,7 @@ func verifyFiltersAreValidEqualities(left, right RelExpr, filters FiltersExpr) b
 
 	var leftTab, rightTab opt.TableID
 	leftNotNullCols := left.Relational().NotNullCols
-	rightUnfilteredCols := deriveUnfilteredCols(right)
+	rightUnfilteredCols := DeriveUnfilteredCols(right)
 	if rightUnfilteredCols.Empty() {
 		// There are no unfiltered columns from the right input.
 		return false

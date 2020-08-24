@@ -130,3 +130,130 @@ func (c *CustomFuncs) extractConjunct(conjunct opt.ScalarExpr, and *memo.AndExpr
 	}
 	return c.f.ConstructAnd(c.extractConjunct(conjunct, and.Left.(*memo.AndExpr)), and.Right)
 }
+
+// FindConstrainedColumn takes the left and right operands of an Or operator
+// as input. It examines each conjunct from the left expression and determines
+// whether it contains a single outer column, which also appears in a conjunct
+// as a single outer column in the right expression. If so, it returns the
+// matching column ID. Otherwise, it returns 0. For example, suppose the column
+// ID of x is 1:
+//
+//   x=1 OR x=2                                       =>  1
+//   x=1 OR y=2                                       =>  0
+//   x=1 OR (x=2 AND y=2)                             =>  1
+//   (x=1 AND y=2) OR (x=2 AND z=3)                   =>  1
+//   (x=1 AND y=2 AND z=3) OR (x=2 AND (a=1 OR b=2))  =>  1
+//
+// Once a constrained column has been found, a conjunct is extracted via a
+// call to the ExtractConstrainedColumnConjunct function. Matching conjuncts
+// are extracted from multiple nested Or operators by repeated application of
+// these functions.
+func (c *CustomFuncs) FindConstrainedColumn(
+	left, right opt.ScalarExpr, unfilteredCols opt.ColSet,
+) opt.ColSet {
+	// Recurse over each conjunct from the left expression and determine whether
+	// it has a single outer column that matches a conjunct on the right.
+	for {
+		// Assume a left-deep And expression tree normalized by NormalizeNestedAnds.
+		if and, ok := left.(*memo.AndExpr); ok {
+			if colSet, ok := c.isSingleVariableConjunct(and.Right, right); ok {
+				if colSet.Intersects(unfilteredCols) {
+					// Only return if the column is unfiltered to avoid pushing down the
+					// new conjunct multiple times.
+					return colSet
+				}
+			}
+			left = and.Left
+		} else {
+			if colSet, ok := c.isSingleVariableConjunct(left, right); ok {
+				if colSet.Intersects(unfilteredCols) {
+					// Only return if the column is unfiltered to avoid pushing down the
+					// new conjunct multiple times.
+					return colSet
+				}
+			}
+			return opt.ColSet{}
+		}
+	}
+}
+
+// isSingleVariableConjunct returns true if the candidate expression is a
+// single-variable comparison within the given conjunction. The conjunction
+// is assumed to be left-deep (normalized by the NormalizeNestedAnds rule).
+func (c *CustomFuncs) isSingleVariableConjunct(
+	candidate, conjunction opt.ScalarExpr,
+) (_ opt.ColSet, ok bool) {
+	outerCols := c.ScalarExprOuterCols(candidate)
+	if outerCols.Len() != 1 {
+		return opt.ColSet{}, false
+	}
+	for {
+		if and, ok := conjunction.(*memo.AndExpr); ok {
+			if c.ScalarExprOuterCols(and.Right).Equals(outerCols) {
+				return outerCols, true
+			}
+			conjunction = and.Left
+		} else {
+			if c.ScalarExprOuterCols(conjunction).Equals(outerCols) {
+				return outerCols, true
+			}
+			return opt.ColSet{}, false
+		}
+	}
+}
+
+// ScalarExprOuterCols calculates the set of outer columns from scratch for
+// expressions that do not implement ScalarPropsExpr.
+func (c *CustomFuncs) ScalarExprOuterCols(e opt.Expr) opt.ColSet {
+	var cols opt.ColSet
+	switch t := e.(type) {
+	case *memo.VariableExpr:
+		cols.Add(t.Col)
+		return cols
+	}
+	for i, n := 0, e.ChildCount(); i < n; i++ {
+		cols.UnionWith(c.ScalarExprOuterCols(e.Child(i)))
+	}
+	return cols
+}
+
+// ExtractConstrainedColumnConjunct extracts a conjunct containing a single
+// variable from an Or expression, and returns the conjunct. For example:
+//
+//   (x=1 AND y=2) OR (x=2 AND z=3)  =>  (x=1 OR x=2)
+//
+// These transformations are useful for finding a conjunct that can be pushed
+// down in the query tree. For example, if the conjunct (x=1 OR x=2) is fully
+// bound by one side of a join, it can be pushed through the join, even if the
+// original OR expression cannot.
+func (c *CustomFuncs) ExtractConstrainedColumnConjunct(
+	colSet opt.ColSet, left, right opt.ScalarExpr,
+) opt.ScalarExpr {
+	return c.f.ConstructOr(
+		c.extractConjunctWithOuterCols(colSet, left),
+		c.extractConjunctWithOuterCols(colSet, right),
+	)
+}
+
+// extractConjunctWithOuterCols traverses the subtree looking for all
+// conjuncts with the given set of outer columns. It returns them all
+// as a left-deep tree of nested And expressions.
+func (c *CustomFuncs) extractConjunctWithOuterCols(
+	colSet opt.ColSet, expr opt.ScalarExpr,
+) opt.ScalarExpr {
+	if c.ScalarExprOuterCols(expr).Equals(colSet) {
+		return expr
+	}
+	and, ok := expr.(*memo.AndExpr)
+	if !ok {
+		return nil
+	}
+	left := c.extractConjunctWithOuterCols(colSet, and.Left)
+	if c.ScalarExprOuterCols(and.Right).Equals(colSet) {
+		if left != nil {
+			return c.f.ConstructAnd(left, and.Right)
+		}
+		return and.Right
+	}
+	return left
+}

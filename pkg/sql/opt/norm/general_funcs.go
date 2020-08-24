@@ -37,8 +37,25 @@ func (c *CustomFuncs) Init(f *Factory) {
 	c.mem = f.Memo()
 }
 
+// ----------------------------------------------------------------------
+//
+// Success functions
+//   General functions used to indicate whether an operation was successful.
+//
+// ----------------------------------------------------------------------
+
 // Succeeded returns true if a result expression is not nil.
 func (c *CustomFuncs) Succeeded(result opt.Expr) bool {
+	return result != nil
+}
+
+// ColSetSucceeded returns true if a result ColSet is not empty.
+func (c *CustomFuncs) ColSetSucceeded(result opt.ColSet) bool {
+	return !result.Empty()
+}
+
+// OrderingSucceeded returns true if an OrderingChoice is not nil.
+func (c *CustomFuncs) OrderingSucceeded(result *physical.OrderingChoice) bool {
 	return result != nil
 }
 
@@ -687,6 +704,13 @@ func (c *CustomFuncs) ReplaceFiltersItem(
 	panic(errors.AssertionFailedf("item to replace is not in the list: %v", search))
 }
 
+// AppendFiltersItem returns a new FiltersExpr with item appended to filters.
+func (c *CustomFuncs) AppendFiltersItem(
+	filters memo.FiltersExpr, item opt.ScalarExpr,
+) memo.FiltersExpr {
+	return append(filters, c.f.ConstructFiltersItem(item))
+}
+
 // ExtractBoundConditions returns a new list containing only those expressions
 // from the given list that are fully bound by the given columns (i.e. all
 // outer references are to one of these columns). For example:
@@ -729,6 +753,10 @@ func (c *CustomFuncs) ExtractUnboundConditions(
 		}
 	}
 	return newFilters
+}
+
+func (c *CustomFuncs) DeriveUnfilteredCols(in memo.RelExpr) opt.ColSet {
+	return memo.DeriveUnfilteredCols(in)
 }
 
 // ----------------------------------------------------------------------

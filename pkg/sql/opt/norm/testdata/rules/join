@@ -3453,3 +3453,146 @@ project
       ├── scan xy
       └── filters
            └── (i:2 + k:1) IS NOT NULL [outer=(1,2), immutable]
+
+# --------------------------------------------------
+# ExtractJoinConstrainedColumnConjunct
+# --------------------------------------------------
+
+# Pull out conjunct for constraint on 'a1.i'.
+opt expect=(ExtractJoinConstrainedColumnConjunct)
+SELECT * FROM a a1 INNER JOIN a a2 ON a1.i = 1 OR (a1.i = 2 AND a2.i = 2)
+----
+inner-join (cross)
+ ├── columns: k:1!null i:2!null f:3!null s:4 j:5 k:7!null i:8 f:9!null s:10 j:11
+ ├── key: (1,7)
+ ├── fd: (1)-->(2-5), (7)-->(8-11)
+ ├── scan a2
+ │    ├── columns: a2.k:7!null a2.i:8 a2.f:9!null a2.s:10 a2.j:11
+ │    ├── key: (7)
+ │    └── fd: (7)-->(8-11)
+ ├── select
+ │    ├── columns: a1.k:1!null a1.i:2!null a1.f:3!null a1.s:4 a1.j:5
+ │    ├── key: (1)
+ │    ├── fd: (1)-->(2-5)
+ │    ├── scan a1
+ │    │    ├── columns: a1.k:1!null a1.i:2 a1.f:3!null a1.s:4 a1.j:5
+ │    │    ├── key: (1)
+ │    │    └── fd: (1)-->(2-5)
+ │    └── filters
+ │         └── (a1.i:2 = 1) OR (a1.i:2 = 2) [outer=(2), constraints=(/2: [/1 - /1] [/2 - /2]; tight)]
+ └── filters
+      └── (a1.i:2 = 1) OR ((a1.i:2 = 2) AND (a2.i:8 = 2)) [outer=(2,8), constraints=(/2: [/1 - /1] [/2 - /2])]
+
+# Pull out conjunct for constraint on 'a1.i'.
+opt expect=(ExtractJoinConstrainedColumnConjunct)
+SELECT * FROM a a1 INNER JOIN a a2 ON (a1.i = 1 AND a2.i = 2) OR (a1.i = 2 AND a2.k < 3)
+----
+inner-join (cross)
+ ├── columns: k:1!null i:2!null f:3!null s:4 j:5 k:7!null i:8 f:9!null s:10 j:11
+ ├── key: (1,7)
+ ├── fd: (1)-->(2-5), (7)-->(8-11)
+ ├── scan a2
+ │    ├── columns: a2.k:7!null a2.i:8 a2.f:9!null a2.s:10 a2.j:11
+ │    ├── key: (7)
+ │    └── fd: (7)-->(8-11)
+ ├── select
+ │    ├── columns: a1.k:1!null a1.i:2!null a1.f:3!null a1.s:4 a1.j:5
+ │    ├── key: (1)
+ │    ├── fd: (1)-->(2-5)
+ │    ├── scan a1
+ │    │    ├── columns: a1.k:1!null a1.i:2 a1.f:3!null a1.s:4 a1.j:5
+ │    │    ├── key: (1)
+ │    │    └── fd: (1)-->(2-5)
+ │    └── filters
+ │         └── (a1.i:2 = 1) OR (a1.i:2 = 2) [outer=(2), constraints=(/2: [/1 - /1] [/2 - /2]; tight)]
+ └── filters
+      └── ((a1.i:2 = 1) AND (a2.i:8 = 2)) OR ((a1.i:2 = 2) AND (a2.k:7 < 3)) [outer=(2,7,8), constraints=(/2: [/1 - /1] [/2 - /2])]
+
+# Pull out conjunct for constraint on 'a1.i'.
+opt expect=(ExtractJoinConstrainedColumnConjunct)
+SELECT * FROM a a1 INNER JOIN a a2 ON (a1.i = 1 AND a2.i = 2 AND a2.k < 3) OR (a1.i = 2 AND (a1.s = 'foo' OR a2.j <@ '[1, 2, 3]'::JSONB))
+----
+inner-join (cross)
+ ├── columns: k:1!null i:2!null f:3!null s:4 j:5 k:7!null i:8 f:9!null s:10 j:11
+ ├── immutable
+ ├── key: (1,7)
+ ├── fd: (1)-->(2-5), (7)-->(8-11)
+ ├── scan a2
+ │    ├── columns: a2.k:7!null a2.i:8 a2.f:9!null a2.s:10 a2.j:11
+ │    ├── key: (7)
+ │    └── fd: (7)-->(8-11)
+ ├── select
+ │    ├── columns: a1.k:1!null a1.i:2!null a1.f:3!null a1.s:4 a1.j:5
+ │    ├── key: (1)
+ │    ├── fd: (1)-->(2-5)
+ │    ├── scan a1
+ │    │    ├── columns: a1.k:1!null a1.i:2 a1.f:3!null a1.s:4 a1.j:5
+ │    │    ├── key: (1)
+ │    │    └── fd: (1)-->(2-5)
+ │    └── filters
+ │         └── (a1.i:2 = 1) OR (a1.i:2 = 2) [outer=(2), constraints=(/2: [/1 - /1] [/2 - /2]; tight)]
+ └── filters
+      └── (((a1.i:2 = 1) AND (a2.i:8 = 2)) AND (a2.k:7 < 3)) OR ((a1.i:2 = 2) AND ((a1.s:4 = 'foo') OR ('[1, 2, 3]' @> a2.j:11))) [outer=(2,4,7,8,11), immutable, constraints=(/2: [/1 - /1] [/2 - /2])]
+
+# No-op case because a predicate with more than two disjuncts is not currently
+# handled.
+opt expect-not=(ExtractJoinConstrainedColumnConjunct)
+SELECT * FROM a a1 INNER JOIN a a2 ON (a1.i = 1 AND a2.i = 2) OR (a1.i = 2 AND a2.k < 3) OR (a1.i = 4 AND a2.i = 3)
+----
+inner-join (cross)
+ ├── columns: k:1!null i:2!null f:3!null s:4 j:5 k:7!null i:8 f:9!null s:10 j:11
+ ├── key: (1,7)
+ ├── fd: (1)-->(2-5), (7)-->(8-11)
+ ├── scan a1
+ │    ├── columns: a1.k:1!null a1.i:2 a1.f:3!null a1.s:4 a1.j:5
+ │    ├── key: (1)
+ │    └── fd: (1)-->(2-5)
+ ├── scan a2
+ │    ├── columns: a2.k:7!null a2.i:8 a2.f:9!null a2.s:10 a2.j:11
+ │    ├── key: (7)
+ │    └── fd: (7)-->(8-11)
+ └── filters
+      └── (((a1.i:2 = 1) AND (a2.i:8 = 2)) OR ((a1.i:2 = 2) AND (a2.k:7 < 3))) OR ((a1.i:2 = 4) AND (a2.i:8 = 3)) [outer=(2,7,8), constraints=(/2: [/1 - /1] [/2 - /2] [/4 - /4])]
+
+# No-op case because the disjunction is pushed down to the left input.
+opt expect-not=(ExtractJoinConstrainedColumnConjunct)
+SELECT * FROM a a1 INNER JOIN a a2 ON a1.i = 1 OR a1.i = 2
+----
+inner-join (cross)
+ ├── columns: k:1!null i:2!null f:3!null s:4 j:5 k:7!null i:8 f:9!null s:10 j:11
+ ├── key: (1,7)
+ ├── fd: (1)-->(2-5), (7)-->(8-11)
+ ├── scan a2
+ │    ├── columns: a2.k:7!null a2.i:8 a2.f:9!null a2.s:10 a2.j:11
+ │    ├── key: (7)
+ │    └── fd: (7)-->(8-11)
+ ├── select
+ │    ├── columns: a1.k:1!null a1.i:2!null a1.f:3!null a1.s:4 a1.j:5
+ │    ├── key: (1)
+ │    ├── fd: (1)-->(2-5)
+ │    ├── scan a1
+ │    │    ├── columns: a1.k:1!null a1.i:2 a1.f:3!null a1.s:4 a1.j:5
+ │    │    ├── key: (1)
+ │    │    └── fd: (1)-->(2-5)
+ │    └── filters
+ │         └── (a1.i:2 = 1) OR (a1.i:2 = 2) [outer=(2), constraints=(/2: [/1 - /1] [/2 - /2]; tight)]
+ └── filters (true)
+
+# No-op case because there are no columns that are constrained in all disjuncts.
+opt expect-not=(ExtractJoinConstrainedColumnConjunct)
+SELECT * FROM a a1 INNER JOIN a a2 ON a1.i = 1 OR a2.k = 2
+----
+inner-join (cross)
+ ├── columns: k:1!null i:2 f:3!null s:4 j:5 k:7!null i:8 f:9!null s:10 j:11
+ ├── key: (1,7)
+ ├── fd: (1)-->(2-5), (7)-->(8-11)
+ ├── scan a1
+ │    ├── columns: a1.k:1!null a1.i:2 a1.f:3!null a1.s:4 a1.j:5
+ │    ├── key: (1)
+ │    └── fd: (1)-->(2-5)
+ ├── scan a2
+ │    ├── columns: a2.k:7!null a2.i:8 a2.f:9!null a2.s:10 a2.j:11
+ │    ├── key: (7)
+ │    └── fd: (7)-->(8-11)
+ └── filters
+      └── (a1.i:2 = 1) OR (a2.k:7 = 2) [outer=(2,7)]
