@@ -35,7 +35,7 @@ type createFuncNode struct {
 	n        *tree.CreateFunction
 	dbDesc   catalog.DatabaseDescriptor
 	funcName *tree.FuncName
-	expr     tree.Expr
+	expr     *tree.Select
 }
 
 // Use to satisfy the linter.
@@ -119,7 +119,7 @@ func (p *planner) createUserDefinedFunc(
 	db catalog.DatabaseDescriptor,
 	funcName *tree.FuncName,
 	n *tree.CreateFunction,
-	expr tree.Expr,
+	expr *tree.Select,
 ) error {
 	paramNames := make([]string, len(n.Params))
 	paramTypes := make([]*types.T, len(n.Params))
@@ -142,7 +142,7 @@ func (p *planner) createUserDefinedFunc(
 		paramNames[i] = param.Name
 		paramTypes[i] = toType
 	}
-	retType, err := tree.ResolveType(params.ctx, n.ReturnType, params.p.semaCtx.GetTypeResolver())
+	retType, err := p.resolveFunctionReturnType(params, n.ReturnType.Types)
 	if err != nil {
 		return err
 	}
@@ -222,6 +222,7 @@ func (p *planner) createUserDefinedFunc(
 		ParamNames:     paramNames,
 		ParamTypes:     paramTypes,
 		ReturnType:     *retType,
+		ReturnsSet:     n.ReturnType.SetOf,
 		ParentSchemaID: schemaID,
 		ParentID:       dbID,
 		Version:        1,
@@ -240,12 +241,34 @@ func (p *planner) createUserDefinedFunc(
 		return err
 	}
 
+	// Add the FunctionDefinition to FunDefs so references to it can be resolved.
+	// TODO: FunDefs is only meant for builtins, and isn't meant to change. Use a
+	//  different field for this and alter the relevant function resolution code.
+	if def, err := newDesc.MakeFuncDef(); err == nil {
+		tree.FunDefs[funcName.Object()] = def
+	} else {
+		return err
+	}
+
 	// Log the event.
 	return p.logEvent(params.ctx,
 		newDesc.GetID(),
 		&eventpb.CreateFunc{
 			FuncName: funcName.String(),
 		})
+}
+
+func (p *planner) resolveFunctionReturnType(params runParams, ret []tree.ResolvableTypeReference,
+) (*types.T, error) {
+	typs := make([]*types.T, len(ret))
+	var err error
+	for i := range ret {
+		typs[i], err = tree.ResolveType(params.ctx, ret[i], params.p.semaCtx.GetTypeResolver())
+		if err != nil {
+			return nil, err
+		}
+	}
+	return types.MakeTuple(typs), nil
 }
 
 func (c *createFuncNode) Next(_ runParams) (bool, error) { return false, nil }

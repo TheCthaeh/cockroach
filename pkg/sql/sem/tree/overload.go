@@ -74,9 +74,12 @@ type Overload struct {
 	SQLFn func(*EvalContext, Datums) (string, error)
 
 	// UserDef must be set for overloads of type UserDefinedClass. It
-	// is a user-defined scalar expression that will be evaluated when
+	// is a user-defined Select expression that will be evaluated when
 	// the overload is run.
-	UserDef Expr
+	UserDef *Select
+
+	// ReturnsSet indicates whether a user-defined function returns sets of rows.
+	ReturnsSet bool
 
 	// counter, if non-nil, should be incremented upon successful
 	// type check of expressions using this overload.

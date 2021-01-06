@@ -1111,6 +1111,7 @@ func (b *Builder) buildSelectClause(
 	b.buildOrderBy(fromScope, projectionsScope, orderByScope)
 	b.buildDistinctOnArgs(fromScope, projectionsScope, distinctOnScope)
 	b.buildProjectSet(fromScope)
+	b.buildScalarUdfJoins(fromScope)
 
 	if needsAgg {
 		// We must wait to build the aggregation until after the above block since

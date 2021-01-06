@@ -1865,7 +1865,7 @@ type CreateFunction struct {
 	Name       *UnresolvedObjectName
 	OrReplace  bool
 	Params     []FormalParam
-	ReturnType ResolvableTypeReference
+	ReturnType FuncReturnType
 	FuncDef    *StrVal
 	// Currently, only accepts "SQL".
 	Language string
@@ -1887,7 +1887,7 @@ func (node *CreateFunction) Format(ctx *FmtCtx) {
 		node.Params[i].Format(ctx)
 	}
 	ctx.WriteString(") RETURNS ")
-	ctx.WriteString(node.ReturnType.SQLString())
+	node.ReturnType.Format(ctx)
 
 	ctx.WriteString(" AS ")
 	node.FuncDef.Format(ctx)
@@ -1910,4 +1910,30 @@ func (node *FormalParam) Format(ctx *FmtCtx) {
 		ctx.WriteString(" ")
 	}
 	ctx.WriteString(node.Type.SQLString())
+}
+
+type FuncReturnType struct {
+	// Types gives the types of the columns returned by the function.
+	Types []ResolvableTypeReference
+
+	// SetOf indicates whether the function can return multiple rows.
+	SetOf bool
+}
+
+func (node *FuncReturnType) Format(ctx *FmtCtx) {
+	if node.SetOf {
+		ctx.WriteString("SETOF ")
+	}
+	if len(node.Types) == 1 {
+		ctx.WriteString(node.Types[0].SQLString())
+	} else {
+		ctx.WriteString("(")
+		for i := range node.Types {
+			if i > 0 {
+				ctx.WriteString(",")
+			}
+			ctx.WriteString(node.Types[i].SQLString())
+		}
+		ctx.WriteString(")")
+	}
 }

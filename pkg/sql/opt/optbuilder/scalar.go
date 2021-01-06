@@ -392,6 +392,22 @@ func (b *Builder) buildScalar(
 		}
 		out = b.factory.ConstructTuple(els, t.ResolvedType())
 
+	case *udf:
+		if len(t.cols) == 1 {
+			if inGroupingContext {
+				// Non-grouping column was referenced. Note that a column that is part
+				// of a larger grouping expression would have been detected by the
+				// groupStrs checking code above.
+				panic(newGroupingError(&t.cols[0].name))
+			}
+			return b.finishBuildScalarRef(&t.cols[0], inScope, outScope, outCol, colRefs)
+		}
+		els := make(memo.ScalarListExpr, len(t.cols))
+		for i := range t.cols {
+			els[i] = b.buildScalar(&t.cols[i], inScope, nil, nil, colRefs)
+		}
+		out = b.factory.ConstructTuple(els, t.ResolvedType())
+
 	case *subquery:
 		out, _ = b.buildSingleRowSubquery(t, inScope)
 		// Perform correctness checks on the outer cols, update colRefs and

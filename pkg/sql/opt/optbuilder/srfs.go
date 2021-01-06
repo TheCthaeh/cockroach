@@ -12,7 +12,6 @@ package optbuilder
 
 import (
 	"context"
-
 	"github.com/cockroachdb/cockroach/pkg/sql/opt"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/memo"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
@@ -84,8 +83,10 @@ func (b *Builder) buildZip(exprs tree.Exprs, inScope *scope) (outScope *scope) {
 	inScope.context = exprKindFrom
 
 	// Build each of the provided expressions.
-	zip := make(memo.ZipExpr, len(exprs))
-	for i, expr := range exprs {
+	udfScope := inScope.push()
+	udfScope.isTableSource = true
+	zip := make(memo.ZipExpr, 0, len(exprs))
+	for _, expr := range exprs {
 		// Output column names should exactly match the original expression, so we
 		// have to determine the output column name before we perform type
 		// checking. However, the alias may be overridden later below if the expression
@@ -96,11 +97,22 @@ func (b *Builder) buildZip(exprs tree.Exprs, inScope *scope) (outScope *scope) {
 		}
 		texpr := inScope.resolveType(expr, types.Any)
 
+		var ok bool
+		var funcExpr *tree.FuncExpr
 		var def *tree.FunctionDefinition
-		if funcExpr, ok := texpr.(*tree.FuncExpr); ok {
+		if funcExpr, ok = texpr.(*tree.FuncExpr); ok {
 			if def, err = funcExpr.Func.Resolve(b.ctx, b.catalog, b.semaCtx.SearchPath); err != nil {
 				panic(err)
 			}
+		}
+
+		if def.Class == tree.UserDefinedClass {
+			u := udfScope.replaceUserDefinedFunc(funcExpr, def).(*udf)
+			outScope.cols = append(outScope.cols, u.cols...)
+
+			// A user-defined function cannot be included in a ProjectSet, so we
+			// handle it separately.
+			continue
 		}
 
 		var outCol *scopeColumn
@@ -121,15 +133,25 @@ func (b *Builder) buildZip(exprs tree.Exprs, inScope *scope) (outScope *scope) {
 		for j := startCols; j < len(outScope.cols); j++ {
 			cols[j-startCols] = outScope.cols[j].id
 		}
-		zip[i] = b.factory.ConstructZipItem(scalar, cols)
+		zip = append(zip, b.factory.ConstructZipItem(scalar, cols))
 	}
 
-	// Construct the zip as a ProjectSet with empty input.
-	input := b.factory.ConstructValues(memo.ScalarListWithEmptyTuple, &memo.ValuesPrivate{
-		Cols: opt.ColList{},
-		ID:   b.factory.Metadata().NextUniqueID(),
-	})
-	outScope.expr = b.factory.ConstructProjectSet(input, zip)
+	// Use a series of full joins to construct a zip for the UDFs.
+	udfZip := b.buildUdfZip(udfScope.udfs, false /* ignoreScalarUdfs */)
+
+	var projectSetZip memo.RelExpr
+  if len(zip) > 0 {
+		// Construct the zip as a ProjectSet with empty input.
+		input := b.factory.ConstructValues(memo.ScalarListWithEmptyTuple, &memo.ValuesPrivate{
+			Cols: opt.ColList{},
+			ID:   b.factory.Metadata().NextUniqueID(),
+		})
+		projectSetZip = b.factory.ConstructProjectSet(input, zip)
+	}
+
+	// Use a full join to zip the UDF zip and the ProjectSet zip.
+	outScope.expr = b.buildFunctionalZip(udfZip, projectSetZip)
+
 	if len(outScope.cols) == 1 {
 		outScope.singleSRFColumn = true
 	}
@@ -160,7 +182,7 @@ func (b *Builder) finishBuildGeneratorFunction(
 
 // buildProjectSet builds a ProjectSet, which is a lateral cross join
 // between the given input expression and a functional zip constructed from the
-// given srfs.
+// given SRFs and UDFs.
 //
 // This function is called at most once per SELECT clause, and updates
 // inScope.expr if at least one SRF was discovered in the SELECT list. The
@@ -172,19 +194,41 @@ func (b *Builder) finishBuildGeneratorFunction(
 // In this case, the inputs to generate_series depend on table t, so during
 // execution, generate_series will be called once for each row of t.
 func (b *Builder) buildProjectSet(inScope *scope) {
-	if len(inScope.srfs) == 0 {
+	if len(inScope.srfs) + len(inScope.udfs) == 0 {
 		return
 	}
 
-	// Get the output columns and function expressions of the zip.
-	zip := make(memo.ZipExpr, len(inScope.srfs))
-	for i, srf := range inScope.srfs {
-		cols := make(opt.ColList, len(srf.cols))
-		for j := range srf.cols {
-			cols[j] = srf.cols[j].id
-		}
-		zip[i] = b.factory.ConstructZipItem(srf.fn, cols)
+	var udfZip memo.RelExpr
+	if len(inScope.udfs) > 0 {
+		udfZip = b.buildUdfZip(inScope.udfs, true /* ignoreScalarUdfs */)
 	}
 
-	inScope.expr = b.factory.ConstructProjectSet(inScope.expr, zip)
+	var srfZip memo.RelExpr
+	if len(inScope.srfs) > 0 {
+		// Get the output columns and function expressions of the zip.
+		zip := make(memo.ZipExpr, len(inScope.srfs))
+		for i, srf := range inScope.srfs {
+			cols := make(opt.ColList, len(srf.cols))
+			for j := range srf.cols {
+				cols[j] = srf.cols[j].id
+			}
+			zip[i] = b.factory.ConstructZipItem(srf.fn, cols)
+		}
+		srfZip = b.factory.ConstructProjectSet(inScope.expr, zip)
+	}
+
+	if srfZip == nil {
+		if udfZip == nil {
+			// This may happen if there are no SRFs and all UDFs are scalar.
+			return
+		}
+		// There are no SRFs, so no ProjectSet was constructed. We need to join the
+		// UDF zip with the existing input so that any outer references in the UDFs
+		// are satisfied.
+		inScope.expr = b.factory.ConstructInnerJoinApply(
+			inScope.expr, udfZip, memo.TrueFilter, memo.EmptyJoinPrivate)
+		return
+	}
+
+	inScope.expr = b.buildFunctionalZip(udfZip, srfZip)
 }

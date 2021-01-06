@@ -164,17 +164,19 @@ func (desc *Immutable) MakeFuncDef() (*tree.FunctionDefinition, error) {
 		typs[i].Name = desc.ParamNames[i]
 	}
 	retType := desc.ReturnType
-	expr, err := parser.ParseExpr(desc.Def)
+	expr, err := parser.ParseOne(desc.Def)
 	if err != nil {
 		return nil, err
 	}
+	sel, _ := expr.AST.(*tree.Select)
 	name := desc.Name()
 	return tree.NewFunctionDefinition(name, &props, []tree.Overload{
 		{
 			Types:      typs,
 			ReturnType: tree.FixedReturnType(&retType),
 			Volatility: tree.VolatilityVolatile,
-			UserDef:    expr,
+			UserDef:    sel,
+			ReturnsSet: desc.ReturnsSet,
 		},
 	}), nil
 }

@@ -80,8 +80,9 @@ type scope struct {
 	// anchored directly to a relational expression.
 	columns int
 
-	// If replaceSRFs is true, replace raw SRFs with an srf struct. See
-	// the replaceSRF() function for more details.
+	// If replaceSRFs is true, replace raw SRFs and UDFs with an srf or udf struct
+	// respectively. See the replaceSRF() and replaceUserDefinedFunc functions for
+	// more details.
 	replaceSRFs bool
 
 	// singleSRFColumn is true if this scope has a single column that comes from
@@ -92,6 +93,17 @@ type scope struct {
 	// used by the Builder to convert the input from the FROM clause to a lateral
 	// cross join between the input and a Zip of all the srfs in this slice.
 	srfs []*srf
+
+	// isTableSource is true if this scope is being used to construct a table
+	// source. This satisfies a postgres quirk where UDF columns are nested in a
+	// tuple unless the UDF is serving as a table source.
+	isTableSource bool
+
+	// udfs contains all the UDFs that were replaced in this scope. It will be
+	// used by the Builder to convert the input from the FROM clause to a series
+	// lateral cross joins between the input and the expression defined by each
+	// udf.
+	udfs []*udf
 
 	// ctes contains the CTEs which were created at this scope. This set
 	// is not exhaustive because expressions can reference CTEs from parent
@@ -955,7 +967,7 @@ func (s *scope) VisitPre(expr tree.Expr) (recurse bool, newExpr tree.Expr) {
 			break
 		}
 
-		if isUserDefinedFunc(def) {
+		if isUserDefinedFunc(def) && s.replaceSRFs {
 			expr = s.replaceUserDefinedFunc(t, def)
 			break
 		}
@@ -1317,8 +1329,17 @@ func (s *scope) replaceSQLFn(f *tree.FuncExpr, def *tree.FunctionDefinition) tre
 	return &info
 }
 
-// replaceSQLFn replaces a tree.SQLClass function with a sqlFnInfo struct. See
-// comments above tree.SQLClass and sqlFnInfo for details.
+// replaceUserDefinedFunc returns a udf struct that can be used to replace a raw
+// UDF. When this struct is encountered during the build process, it is replaced
+// with a reference to the column returned by the UDF (if the UDF returns a
+// single column) or a tuple of column references (if the UDF returns multiple
+// columns).
+//
+// replaceUserDefinedFunc also stores a pointer to the new udf struct in this
+// scope's udfs slice. The slice is used later by the Builder to convert the
+// input from the FROM clause to a lateral cross join between the input and each
+// udf in the s.udfs slice. See Builder.buildUDFLateralJoins in udfs.go for more
+// details.
 func (s *scope) replaceUserDefinedFunc(f *tree.FuncExpr, def *tree.FunctionDefinition) tree.Expr {
 	// We need to save and restore the previous value of the field in
 	// semaCtx in case we are recursively called within a subquery
@@ -1349,35 +1370,106 @@ func (s *scope) replaceUserDefinedFunc(f *tree.FuncExpr, def *tree.FunctionDefin
 		paramNames[i] = tree.Name(typs[i].Name)
 	}
 
-	return s.replaceSubquery(&tree.Subquery{
-		Select: &tree.ParenSelect{
-			Select: &tree.Select{
-				Select: &tree.SelectClause{
-					Exprs: tree.SelectExprs{
-						tree.SelectExpr{Expr: overload.UserDef},
-					},
-					From: tree.From{
-						Tables: tree.TableExprs{
-							&tree.AliasedTableExpr{
-								Expr: &tree.Subquery{
-									Select: &tree.ValuesClause{
-										Rows: []tree.Exprs{
-											f.Exprs,
-										},
-									},
-								},
-								As: tree.AliasClause{
-									// TODO(jordan): this should have a unique id?
-									Alias: "func_scope",
-									Cols:  paramNames,
-								},
-							},
-						},
+	// TODO(drewk): get the return column names from the function definition.
+	returnNames := make(tree.NameList, len(f.Exprs))
+	for i := range returnNames {
+		returnNames[i] = tree.Name(fmt.Sprintf("col%d", i))
+	}
+
+	join := &tree.JoinTableExpr{
+		JoinType: tree.AstInner,
+		Left: &tree.AliasedTableExpr{
+			Expr: &tree.Subquery{
+				Select: &tree.ValuesClause{
+					Rows: []tree.Exprs{
+						f.Exprs,
 					},
 				},
 			},
+			As: tree.AliasClause{
+				// TODO(jordan): this should have a unique id?
+				Alias: "func_scope",
+				Cols:  paramNames,
+			},
 		},
-	}, false, 1, false)
+		Right: &tree.AliasedTableExpr{
+			Expr: &tree.Subquery{
+				Select: &tree.ParenSelect{
+					Select: overload.UserDef,
+				},
+			},
+			As: tree.AliasClause{
+				Alias: "func_return",
+				Cols: returnNames,
+			},
+			Lateral: true,
+		},
+		Cond: &tree.OnJoinCond{Expr: tree.DBoolTrue},
+	}
+
+	isScalar := !overload.ReturnsSet
+	var limit *tree.Limit
+	if isScalar {
+		// If the function wasn't defined with the SETOF keyword, only return the
+		// first row of the SQL expression.
+		limit = &tree.Limit{Count: tree.NewDInt(tree.DInt(1))}
+	}
+
+	// If the UDF is scalar and not serving as a table source, it needs to
+	// return Null when its source SQL returns no rows.
+	nullOnEmpty := isScalar && !s.isTableSource
+
+	sel := &tree.Select{
+		Select: &tree.SelectClause{
+			Exprs: s.columnsSelectors(returnNames, nullOnEmpty),
+			From: tree.From{
+				Tables: tree.TableExprs{
+					join,
+				},
+			},
+		},
+		Limit: limit,
+	}
+
+	udfScope := s.builder.buildSelect(sel, noRowLocking, nil, s.push())
+	var typedFuncExpr = typedFunc.(*tree.FuncExpr)
+	udf := &udf{
+		FuncExpr: typedFuncExpr,
+		cols:     udfScope.cols,
+		expr:     udfScope.expr,
+		isScalar: isScalar,
+	}
+	s.udfs = append(s.udfs, udf)
+
+	// Add the output columns to this scope, so the column references added
+	// by the build process will not be treated as outer columns.
+	s.cols = append(s.cols, udf.cols...)
+
+	return udf
+}
+
+// columnsSelectors generates Select expressions for cols.
+func (s *scope) columnsSelectors(colNames tree.NameList, returnNullOnEmpty bool) tree.SelectExprs {
+	colItems := make([]tree.ColumnItem, len(colNames))
+	for i, name := range colNames {
+		colItems[i].ColumnName = name
+	}
+
+	exprs := make(tree.SelectExprs, len(colNames))
+	for i := range colItems {
+		if returnNullOnEmpty {
+			// Wrap each column reference in a max aggregate function to ensure
+			// 'null on empty' semantics.
+			exprs[i].Expr = &tree.FuncExpr{
+				Func: tree.WrapFunction("max"),
+				Exprs: tree.Exprs{&colItems[i]},
+				AggType: tree.GeneralAgg,
+			}
+		} else {
+			exprs[i].Expr = &colItems[i]
+		}
+	}
+	return exprs
 }
 
 var (

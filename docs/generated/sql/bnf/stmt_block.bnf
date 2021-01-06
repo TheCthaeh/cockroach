@@ -1047,6 +1047,7 @@ unreserved_keyword ::=
 	| 'SESSION'
 	| 'SESSIONS'
 	| 'SET'
+	| 'SETOF'
 	| 'SETS'
 	| 'SHARE'
 	| 'SHOW'
@@ -1326,8 +1327,8 @@ create_table_as_stmt ::=
 	| 'CREATE' opt_persistence_temp_table 'TABLE' 'IF' 'NOT' 'EXISTS' table_name create_as_opt_col_list opt_table_with 'AS' select_stmt opt_create_table_on_commit
 
 create_function_stmt ::=
-	'CREATE' 'FUNCTION' func_def_name '(' formal_param_list ')' 'RETURNS' typename 'AS' 'SCONST' 'LANGUAGE' name
-	| 'CREATE' 'OR' 'REPLACE' 'FUNCTION' func_def_name '(' formal_param_list ')' 'RETURNS' typename 'AS' 'SCONST' 'LANGUAGE' name
+	'CREATE' 'FUNCTION' func_def_name '(' formal_param_list ')' 'RETURNS' func_return_type 'AS' 'SCONST' 'LANGUAGE' name
+	| 'CREATE' 'OR' 'REPLACE' 'FUNCTION' func_def_name '(' formal_param_list ')' 'RETURNS' func_return_type 'AS' 'SCONST' 'LANGUAGE' name
 
 create_type_stmt ::=
 	'CREATE' 'TYPE' type_name 'AS' 'ENUM' '(' opt_enum_val_list ')'
@@ -1871,6 +1872,12 @@ func_def_name ::=
 
 formal_param_list ::=
 	( formal_param ) ( ( ',' formal_param ) )*
+
+func_return_type ::=
+	typename
+	| '(' type_list ')'
+	| 'SETOF' typename
+	| 'SETOF' '(' type_list ')'
 
 opt_enum_val_list ::=
 	enum_val_list

@@ -551,6 +551,9 @@ func (u *sqlSymUnion) formalParam() tree.FormalParam {
 func (u *sqlSymUnion) formalParams() []tree.FormalParam {
     return u.val.([]tree.FormalParam)
 }
+func (u *sqlSymUnion) funcReturnType() tree.FuncReturnType {
+    return u.val.(tree.FuncReturnType)
+}
 func (u *sqlSymUnion) typeReference() tree.ResolvableTypeReference {
     return u.val.(tree.ResolvableTypeReference)
 }
@@ -680,7 +683,7 @@ func (u *sqlSymUnion) objectNamePrefixList() tree.ObjectNamePrefixList {
 %token <str> ROLE ROLES ROLLBACK ROLLUP ROW ROWS RSHIFT RULE RUNNING
 
 %token <str> SAVEPOINT SCATTER SCHEDULE SCHEDULES SCHEMA SCHEMAS SCRUB SEARCH SECOND SELECT SEQUENCE SEQUENCES
-%token <str> SERIALIZABLE SERVER SESSION SESSIONS SESSION_USER SET SETS SETTING SETTINGS
+%token <str> SERIALIZABLE SERVER SESSION SESSIONS SESSION_USER SET SETOF SETS SETTING SETTINGS
 %token <str> SHARE SHOW SIMILAR SIMPLE SKIP SKIP_MISSING_FOREIGN_KEYS
 %token <str> SKIP_MISSING_SEQUENCES SKIP_MISSING_SEQUENCE_OWNERS SKIP_MISSING_VIEWS SMALLINT SMALLSERIAL SNAPSHOT SOME SPLIT SQL
 
@@ -933,6 +936,7 @@ func (u *sqlSymUnion) objectNamePrefixList() tree.ObjectNamePrefixList {
 
 %type <tree.FormalParam> formal_param
 %type <[]tree.FormalParam> formal_param_list
+%type <tree.FuncReturnType> func_return_type
 
 %type <[]string> opt_incremental
 %type <tree.KVOption> kv_option
@@ -3126,25 +3130,45 @@ formal_param_list:
 
 func_def_name:         db_object_name
 
+func_return_type:
+  typename
+  {
+		typs := []tree.ResolvableTypeReference{$1.typeReference()}
+		$$.val = tree.FuncReturnType{Types: typs}
+  }
+| '(' type_list ')'
+  {
+		$$.val = tree.FuncReturnType{Types: $2.typeReferences()}
+  }
+| SETOF typename
+  {
+    typs := []tree.ResolvableTypeReference{$2.typeReference()}
+    $$.val = tree.FuncReturnType{Types: typs, SetOf: true}
+  }
+| SETOF '(' type_list ')'
+  {
+		$$.val = tree.FuncReturnType{Types: $3.typeReferences(), SetOf: true}
+  }
+
 // %Help: CREATE FUNCTION
 // %Category: Cfg
-// %Text: CREATE [OR REPLACE] FUNCTION name (args) RETURNS (returns) LANGUAGE x
+// %Text: CREATE [OR REPLACE] FUNCTION name (args) RETURNS [SETOF] (returns) LANGUAGE x
 create_function_stmt:
-  CREATE FUNCTION func_def_name '(' formal_param_list ')' RETURNS typename AS SCONST LANGUAGE name {
+  CREATE FUNCTION func_def_name '(' formal_param_list ')' RETURNS func_return_type AS SCONST LANGUAGE name {
     $$.val = &tree.CreateFunction{
       Name: $3.unresolvedObjectName(),
       Params: $5.formalParams(),
-      ReturnType: $8.typeReference(),
+      ReturnType: $8.funcReturnType(),
       FuncDef: tree.NewStrVal($10),
       Language: $12,
     }
   }
-| CREATE OR REPLACE FUNCTION func_def_name '(' formal_param_list ')' RETURNS typename AS SCONST LANGUAGE name {
+| CREATE OR REPLACE FUNCTION func_def_name '(' formal_param_list ')' RETURNS func_return_type AS SCONST LANGUAGE name {
     $$.val = &tree.CreateFunction{
       OrReplace: true,
       Name: $5.unresolvedObjectName(),
       Params: $7.formalParams(),
-      ReturnType: $10.typeReference(),
+      ReturnType: $10.funcReturnType(),
       FuncDef: tree.NewStrVal($12),
       Language: $14,
     }
@@ -12369,6 +12393,7 @@ unreserved_keyword:
 | SESSION
 | SESSIONS
 | SET
+| SETOF
 | SETS
 | SHARE
 | SHOW

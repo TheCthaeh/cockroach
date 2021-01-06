@@ -1,0 +1,70 @@
+statement ok
+CREATE TABLE t (c1 INT, c2 INT)
+
+statement ok
+INSERT INTO t (VALUES (1, 2), (7, 2))
+
+statement ok
+CREATE FUNCTION udf_scalar(a INT, b INT) RETURNS (INT, INT)
+AS 'SELECT (a+b)*t, (a*b)+t FROM generate_series(1, b) g(t) WHERE a*t > 3 LIMIT b'
+LANGUAGE SQL
+
+statement ok
+CREATE FUNCTION udf_nonScalar(a INT, b INT) RETURNS SETOF (INT, INT)
+AS 'SELECT (a+b)*t, (a*b)+t FROM generate_series(1, b) g(t) WHERE a*t > 3 LIMIT b'
+LANGUAGE SQL
+
+statement ok
+CREATE FUNCTION udf_empty_scalar(a INT, b INT) RETURNS (INT, INT)
+AS 'SELECT a*3, b-2 WHERE False'
+LANGUAGE SQL
+
+query ITTT
+SELECT generate_series(1, 5), udf_scalar(3, 3), udf_nonScalar(3, 3), udf_nonScalar(5, 6)
+----
+1     (18,12)  (12,11)  (11,31)
+2     (18,12)  (18,12)  (22,32)
+3     (18,12)  (,)      (33,33)
+4     (18,12)  (,)      (44,34)
+5     (18,12)  (,)      (55,35)
+NULL  (18,12)  (,)      (66,36)
+
+query III
+SELECT * FROM generate_series(1, 3), udf_nonScalar(4, 4)
+----
+1  8   17
+1  32  20
+1  24  19
+1  16  18
+2  8   17
+2  32  20
+2  24  19
+2  16  18
+3  8   17
+3  32  20
+3  24  19
+3  16  18
+
+query T
+SELECT udf_nonScalar(c1, c2) FROM t
+----
+(9,15)
+(18,16)
+
+query T
+SELECT udf_scalar(c1, c2) FROM t
+----
+(,)
+(18,16)
+
+query T
+SELECT udf_empty_scalar(c1, c2) FROM t
+----
+(,)
+(,)
+
+query II
+SELECT (udf_scalar(c1, c2)).* FROM t
+----
+NULL  NULL
+18    16

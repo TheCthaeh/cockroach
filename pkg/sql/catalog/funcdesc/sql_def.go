@@ -21,29 +21,29 @@ import (
 // definition, and parses it. It performs validation, ensuring that the
 // definition contains only things that the user-defined function implementation
 // can handle.
-func ParseUserDefinedFuncDef(funcDef string) (tree.Expr, error) {
+func ParseUserDefinedFuncDef(funcDef string) (*tree.Select, error) {
 	funcAst, err := parser.ParseOne(funcDef)
 	if err != nil {
 		return nil, pgerror.Wrapf(err, pgcode.Syntax, "invalid function definition: %s", funcDef)
 	}
-	s, ok := funcAst.AST.(*tree.Select)
+	sel, ok := funcAst.AST.(*tree.Select)
 	if !ok {
 		return nil, pgerror.Newf(pgcode.Syntax, "only SELECTs are allowed as UDFs")
 	}
 
-	if s.Limit != nil || s.OrderBy != nil || s.Locking != nil || s.With != nil {
-		return nil, pgerror.Newf(pgcode.Syntax, "only simple scalar SELECTs are allowed as UDFs")
-	}
-	switch t := s.Select.(type) {
+	//if s.Limit != nil || s.OrderBy != nil || s.Locking != nil || s.With != nil {
+	//	return nil, pgerror.Newf(pgcode.Syntax, "only simple scalar SELECTs are allowed as UDFs")
+	//}
+	switch t := sel.Select.(type) {
 	case *tree.SelectClause:
-		if len(t.Exprs) != 1 {
-			return nil, pgerror.New(pgcode.Syntax, "only single-projection scalar SELECTs are allowed as UDFs")
+		if len(t.Exprs) == 0 {
+			return nil, pgerror.New(pgcode.Syntax, "SELECT must have one or more projections")
 		}
-		if t.Distinct || t.TableSelect || t.From.Tables != nil || t.DistinctOn != nil || t.GroupBy != nil ||
-			t.Having != nil || t.Window != nil || t.Where != nil {
-			return nil, pgerror.Newf(pgcode.Syntax, "only simple scalar SELECTs are allowed as UDFs", funcDef)
-		}
-		return t.Exprs[0].Expr, nil
+		//if t.Distinct || t.TableSelect || t.From.Tables != nil || t.DistinctOn != nil || t.GroupBy != nil ||
+		//	t.Having != nil || t.Window != nil || t.Where != nil {
+		//	return nil, pgerror.Newf(pgcode.Syntax, "only simple scalar SELECTs are allowed as UDFs", funcDef)
+		//}
+		return sel, nil
 	default:
 		return nil, pgerror.Newf(pgcode.Syntax, "only simple scalar SELECTs are allowed as UDFs", funcDef)
 	}

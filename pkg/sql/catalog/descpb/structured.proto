@@ -1344,6 +1344,8 @@ message SchemaDescriptor {
    repeated sql.sem.types.T param_types = 17;
    // return_type is the return type of the function.
    optional sql.sem.types.T return_type = 18 [(gogoproto.nullable) = false];
+   // returns_set indicates whether the function returns a set of rows.
+   optional bool returns_set = 19 [(gogoproto.nullable) = false];
 
    // referencing_descriptor_ids is a set of descriptors that reference this func.
    repeated uint32 referencing_descriptor_ids = 12
