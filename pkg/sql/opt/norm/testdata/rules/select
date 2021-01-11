@@ -1178,7 +1178,7 @@ select
  │    │    └── filters
  │    │         └── i:2 = k:1 [outer=(1,2), constraints=(/1: (/NULL - ]; /2: (/NULL - ]), fd=(1)==(2), (2)==(1)]
  │    └── aggregations
- │         ├── max [as=max:7, outer=(4)]
+ │         ├── const-agg [as=max:7, outer=(4)]
  │         │    └── s:4
  │         └── const-agg [as=i:2, outer=(2)]
  │              └── i:2

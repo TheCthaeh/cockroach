@@ -153,25 +153,25 @@ vectorized: true
 │ columns: (sum)
 │
 └── • project
-    │ columns: (any_not_null, sum)
+    │ columns: (any_not_null, any_not_null)
     │ ordering: -any_not_null
     │ estimated row count: 10 (missing stats)
     │
     └── • limit
-        │ columns: (k, sum, any_not_null)
+        │ columns: (k, any_not_null, any_not_null)
         │ estimated row count: 10 (missing stats)
         │ count: 10
         │
         └── • sort
-            │ columns: (k, sum, any_not_null)
+            │ columns: (k, any_not_null, any_not_null)
             │ ordering: -any_not_null
             │ estimated row count: 1,000 (missing stats)
             │ order: -any_not_null
             │
             └── • group
-                │ columns: (k, sum, any_not_null)
+                │ columns: (k, any_not_null, any_not_null)
                 │ estimated row count: 1,000 (missing stats)
-                │ aggregate 0: sum(w)
+                │ aggregate 0: any_not_null(w)
                 │ aggregate 1: any_not_null(v)
                 │ group by: k
                 │ ordered: +k

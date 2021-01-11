@@ -1364,7 +1364,7 @@ project
  │    └── aggregations
  │         ├── array-agg [as=array_agg:15, outer=(7)]
  │         │    └── a.k:7
- │         └── any-not-null-agg [as=a.k:7, outer=(7)]
+ │         └── const-agg [as=a.k:7, outer=(7)]
  │              └── a.k:7
  └── projections
       └── COALESCE(CASE WHEN a.k:7 IS NOT NULL THEN array_agg:15 ELSE CAST(NULL AS INT8[]) END, ARRAY[]) [as=array:14, outer=(7,15)]
@@ -1496,7 +1496,7 @@ project
  │    └── aggregations
  │         ├── array-agg [as=array_agg:23, outer=(19)]
  │         │    └── array:19
- │         └── any-not-null-agg [as=canary:22, outer=(22)]
+ │         └── const-agg [as=canary:22, outer=(22)]
  │              └── canary:22
  └── projections
       └── COALESCE(CASE WHEN canary:22 IS NOT NULL THEN array_agg:23 ELSE CAST(NULL AS INT8[]) END, ARRAY[]) [as=array:21, outer=(22,23)]
@@ -1557,7 +1557,7 @@ project
  │    │    │    │    └── aggregations
  │    │    │    │         ├── array-agg [as=array_agg:21, outer=(13)]
  │    │    │    │         │    └── a.k:13
- │    │    │    │         └── any-not-null-agg [as=a.k:13, outer=(13)]
+ │    │    │    │         └── const-agg [as=a.k:13, outer=(13)]
  │    │    │    │              └── a.k:13
  │    │    │    └── projections
  │    │    │         ├── true [as=canary:24]
@@ -1566,7 +1566,7 @@ project
  │    └── aggregations
  │         ├── array-agg [as=array_agg:25, outer=(20)]
  │         │    └── array:20
- │         └── any-not-null-agg [as=canary:24, outer=(24)]
+ │         └── const-agg [as=canary:24, outer=(24)]
  │              └── canary:24
  └── projections
       └── COALESCE(CASE WHEN canary:24 IS NOT NULL THEN array_agg:25 ELSE CAST(NULL AS INT8[]) END, ARRAY[]) [as=array:23, outer=(24,25)]

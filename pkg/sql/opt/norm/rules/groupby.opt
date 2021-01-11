@@ -3,9 +3,13 @@
 # =============================================================================
 
 # ConvertGroupByToDistinct converts a GroupBy operator that has no aggregations
-# to an equivalent DistinctOn operator.
+# other than passthrough ConstAggs to an equivalent DistinctOn operator.
 [ConvertGroupByToDistinct, Normalize]
-(GroupBy $input:* $aggregations:[] $groupingPrivate:*)
+(GroupBy
+    $input:*
+    $aggregations:* & (OnlyVarConstAggs $aggregations)
+    $groupingPrivate:*
+)
 =>
 (DistinctOn $input $aggregations $groupingPrivate)
 
@@ -54,7 +58,7 @@
 # 3. The join does not null-extend the left columns.
 #
 # EliminateJoinUnderGroupByLeft should stay at the top of the file so that it
-# has a chance to fire before rules like EliminateDistinctOn that might prevent
+# has a chance to fire before rules like EliminateDistinct that might prevent
 # matching.
 [EliminateJoinUnderGroupByLeft, Normalize]
 (GroupBy | ScalarGroupBy | DistinctOn
@@ -529,3 +533,24 @@
     (MergeAggs $innerAggs $outerAggs $innerGroupingCols)
     (MakeGrouping $outerGroupingCols (EmptyOrdering))
 )
+
+# SimplifyGroupBy simplifies the aggregations of a GroupBy that is grouping on
+# a strict key over its input. For example, a count_rows grouped over a key
+# simply returns '1' for each row. In this case, the count_rows aggregation can
+# be replaced with a projection. An aggregate like max will return a single-row
+# input unchanged: max(1) = 1. In this case, the max aggregation can be replaced
+# with a const_agg.
+#
+# Application of this rule may allow a GroupBy to be simplified to a DistinctOn
+# and subsequently eliminated. Situations where a GroupBy groups on a key can
+# arise during decorrelation.
+[SimplifyGroupBy, Normalize]
+(GroupBy | ScalarGroupBy
+    $input:* & (ScalarGroupByHasOneRow (OpName) $input)
+    $aggs:*
+    $private:* &
+        (ColsAreStrictKey (GroupingCols $private) $input) &
+        (CanSimplifyAggs $aggs)
+)
+=>
+(SimplifyGroupBy (OpName) $input $aggs $private)

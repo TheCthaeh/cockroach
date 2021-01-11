@@ -928,7 +928,7 @@ project
  │    │    └── filters
  │    │         └── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    └── aggregations
- │         └── bool-or [as=bool_or:12, outer=(11)]
+ │         └── const-agg [as=bool_or:12, outer=(11)]
  │              └── notnull:11
  └── projections
       └── CASE WHEN bool_or:12 THEN true WHEN bool_or:12 IS NULL THEN false ELSE CAST(NULL AS BOOL) END [as=r:10, outer=(12)]
@@ -1011,7 +1011,7 @@ project
  │    │    └── filters
  │    │         └── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    └── aggregations
- │         └── bool-or [as=bool_or:12, outer=(11)]
+ │         └── const-agg [as=bool_or:12, outer=(11)]
  │              └── notnull:11
  └── projections
       └── CASE WHEN bool_or:12 THEN true WHEN bool_or:12 IS NULL THEN false ELSE CAST(NULL AS BOOL) END [as=r:10, outer=(12)]
@@ -1050,7 +1050,7 @@ project
  │    │         ├── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    │         └── (i:2 = y:8) IS NOT false [outer=(2,8)]
  │    └── aggregations
- │         ├── bool-or [as=bool_or:12, outer=(11)]
+ │         ├── const-agg [as=bool_or:12, outer=(11)]
  │         │    └── notnull:11
  │         └── const-agg [as=i:2, outer=(2)]
  │              └── i:2
@@ -1101,7 +1101,7 @@ project
  │    │         ├── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    │         └── (scalar:11 = y:8) IS NOT false [outer=(8,11)]
  │    └── aggregations
- │         ├── bool-or [as=bool_or:13, outer=(12)]
+ │         ├── const-agg [as=bool_or:13, outer=(12)]
  │         │    └── notnull:12
  │         └── const-agg [as=scalar:11, outer=(11)]
  │              └── scalar:11
@@ -1348,7 +1348,7 @@ project
  │    │    └── filters
  │    │         └── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    └── aggregations
- │         └── sum [as=sum:14, outer=(13)]
+ │         └── const-agg [as=sum:14, outer=(13)]
  │              └── column13:13
  └── projections
       └── sum:14 [as=sum:15, outer=(14)]
@@ -1774,15 +1774,15 @@ project
       ├── key: (4)
       ├── fd: (1)-->(2), (4)-->(1,2,5), (1)==(5), (5)==(1), (4)==(13), (13)==(4)
       ├── group-by
-      │    ├── columns: x:1!null y:2 u:4!null v:5!null max:13!null
+      │    ├── columns: x:1!null y:2 u:4!null v:5!null max:13
       │    ├── grouping columns: u:4!null
       │    ├── key: (4)
       │    ├── fd: (1)-->(2), (4)-->(1,2,5,13), (1)==(5), (5)==(1)
-      │    ├── inner-join (hash)
-      │    │    ├── columns: x:1!null y:2 u:4!null v:5!null k:7!null i:8!null
-      │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
+      │    ├── left-join (hash)
+      │    │    ├── columns: x:1!null y:2 u:4!null v:5!null k:7 i:8
+      │    │    ├── multiplicity: left-rows(exactly-one), right-rows(zero-or-more)
       │    │    ├── key: (4)
-      │    │    ├── fd: (1)-->(2), (4)-->(5), (1)==(5,7), (5)==(1,7), (7)-->(8), (7)==(1,5)
+      │    │    ├── fd: (1)-->(2), (4)-->(5,7,8), (1)==(5), (5)==(1), (7)-->(8)
       │    │    ├── inner-join (hash)
       │    │    │    ├── columns: x:1!null y:2 u:4!null v:5!null
       │    │    │    ├── multiplicity: left-rows(zero-or-more), right-rows(zero-or-one)
@@ -1798,20 +1798,14 @@ project
       │    │    │    │    └── fd: (4)-->(5)
       │    │    │    └── filters
       │    │    │         └── x:1 = v:5 [outer=(1,5), constraints=(/1: (/NULL - ]; /5: (/NULL - ]), fd=(1)==(5), (5)==(1)]
-      │    │    ├── select
-      │    │    │    ├── columns: k:7!null i:8!null
+      │    │    ├── scan a
+      │    │    │    ├── columns: k:7!null i:8
       │    │    │    ├── key: (7)
-      │    │    │    ├── fd: (7)-->(8)
-      │    │    │    ├── scan a
-      │    │    │    │    ├── columns: k:7!null i:8
-      │    │    │    │    ├── key: (7)
-      │    │    │    │    └── fd: (7)-->(8)
-      │    │    │    └── filters
-      │    │    │         └── i:8 IS NOT NULL [outer=(8), constraints=(/8: (/NULL - ]; tight)]
+      │    │    │    └── fd: (7)-->(8)
       │    │    └── filters
       │    │         └── k:7 = x:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
       │    └── aggregations
-      │         ├── max [as=max:13, outer=(8)]
+      │         ├── const-agg [as=max:13, outer=(8)]
       │         │    └── i:8
       │         ├── const-agg [as=v:5, outer=(5)]
       │         │    └── v:5
@@ -1869,7 +1863,7 @@ project
       │    │    └── filters
       │    │         └── k:7 = x:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
       │    └── aggregations
-      │         ├── max [as=max:13, outer=(8)]
+      │         ├── const-agg [as=max:13, outer=(8)]
       │         │    └── i:8
       │         ├── const-agg [as=v:5, outer=(5)]
       │         │    └── v:5
@@ -1924,7 +1918,7 @@ project
  │    │    │    └── filters
  │    │    │         └── k:5 = y:2 [outer=(2,5), constraints=(/2: (/NULL - ]; /5: (/NULL - ]), fd=(2)==(5), (5)==(2)]
  │    │    └── aggregations
- │    │         ├── max [as=max:11, outer=(8)]
+ │    │         ├── const-agg [as=max:11, outer=(8)]
  │    │         │    └── s:8
  │    │         └── const-agg [as=y:2, outer=(2)]
  │    │              └── y:2
@@ -2074,60 +2068,92 @@ with &1 (w0)
       │    ├── scan tab_orig [as=t0]
       │    │    └── columns: t0._string:6
       │    ├── inner-join (hash)
-      │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21!null t1.rowid:23!null t2._bool:28!null t2.rowid:31!null t3._int2:33!null t3._timestamptz:35!null t3.rowid:39!null t4._int8:49!null t4._timestamptz:50!null t5._decimal:60!null
+      │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21!null t1.rowid:23!null t2._bool:28!null t2.rowid:31!null t3._int2:33!null t3._timestamptz:35!null t3.rowid:39!null true_agg:46!null t4._int8:49!null t4._timestamptz:50!null t5._decimal:60!null
       │    │    ├── outer: (6)
-      │    │    ├── fd: ()-->(28), (23)-->(21), (39)-->(33,35), (15,23,31,39)-->(21,33,35), (35)==(50), (50)==(35), (33)==(49), (49)==(33), (21)==(60), (60)==(21)
+      │    │    ├── fd: ()-->(28), (23)-->(21), (39)-->(33,35), (15,23,31,39)-->(21,33,35,46), (35)==(50), (50)==(35), (33)==(49), (49)==(33), (21)==(60), (60)==(21)
       │    │    ├── inner-join (hash)
-      │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33!null t3._timestamptz:35!null t3.rowid:39!null t4._int8:49!null t4._timestamptz:50!null
+      │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33!null t3._timestamptz:35!null t3.rowid:39!null true_agg:46!null t4._int8:49!null t4._timestamptz:50!null
       │    │    │    ├── outer: (6)
-      │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35), (15,23,31,39)-->(21,28,33,35), (35)==(50), (50)==(35), (33)==(49), (49)==(33)
-      │    │    │    ├── group-by
-      │    │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
-      │    │    │    │    ├── grouping columns: tab_orig.rowid:15!null t1.rowid:23!null t2.rowid:31!null t3.rowid:39!null
+      │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35), (15,23,31,39)-->(21,28,33,35,46), (35)==(50), (50)==(35), (33)==(49), (49)==(33)
+      │    │    │    ├── select
+      │    │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null true_agg:46!null
       │    │    │    │    ├── outer: (6)
       │    │    │    │    ├── key: (15,23,31,39)
-      │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35), (15,23,31,39)-->(21,28,33,35)
-      │    │    │    │    ├── inner-join (cross)
-      │    │    │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
+      │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35), (15,23,31,39)-->(21,28,33,35,46)
+      │    │    │    │    ├── group-by
+      │    │    │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null true_agg:46
+      │    │    │    │    │    ├── grouping columns: tab_orig.rowid:15!null t1.rowid:23!null t2.rowid:31!null t3.rowid:39!null
       │    │    │    │    │    ├── outer: (6)
       │    │    │    │    │    ├── key: (15,23,31,39)
-      │    │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35)
-      │    │    │    │    │    ├── scan tab_orig
-      │    │    │    │    │    │    ├── columns: tab_orig.rowid:15!null
-      │    │    │    │    │    │    └── key: (15)
-      │    │    │    │    │    ├── inner-join (cross)
-      │    │    │    │    │    │    ├── columns: t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
-      │    │    │    │    │    │    ├── key: (23,31,39)
-      │    │    │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35)
-      │    │    │    │    │    │    ├── scan tab_orig [as=t1]
-      │    │    │    │    │    │    │    ├── columns: t1._decimal:21 t1.rowid:23!null
-      │    │    │    │    │    │    │    ├── key: (23)
-      │    │    │    │    │    │    │    └── fd: (23)-->(21)
+      │    │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35), (15,23,31,39)-->(21,28,33,35,46)
+      │    │    │    │    │    ├── left-join (cross)
+      │    │    │    │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null true:45
+      │    │    │    │    │    │    ├── outer: (6)
+      │    │    │    │    │    │    ├── multiplicity: left-rows(exactly-one), right-rows(zero-or-more)
+      │    │    │    │    │    │    ├── key: (15,23,31,39)
+      │    │    │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35), (15,23,31,39)-->(45)
       │    │    │    │    │    │    ├── inner-join (cross)
-      │    │    │    │    │    │    │    ├── columns: t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
-      │    │    │    │    │    │    │    ├── key: (31,39)
-      │    │    │    │    │    │    │    ├── fd: (31)-->(28), (39)-->(33,35)
-      │    │    │    │    │    │    │    ├── scan tab_orig [as=t2]
-      │    │    │    │    │    │    │    │    ├── columns: t2._bool:28 t2.rowid:31!null
-      │    │    │    │    │    │    │    │    ├── key: (31)
-      │    │    │    │    │    │    │    │    └── fd: (31)-->(28)
-      │    │    │    │    │    │    │    ├── scan tab_orig [as=t3]
-      │    │    │    │    │    │    │    │    ├── columns: t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
-      │    │    │    │    │    │    │    │    ├── key: (39)
-      │    │    │    │    │    │    │    │    └── fd: (39)-->(33,35)
+      │    │    │    │    │    │    │    ├── columns: tab_orig.rowid:15!null t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
+      │    │    │    │    │    │    │    ├── key: (15,23,31,39)
+      │    │    │    │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35)
+      │    │    │    │    │    │    │    ├── scan tab_orig
+      │    │    │    │    │    │    │    │    ├── columns: tab_orig.rowid:15!null
+      │    │    │    │    │    │    │    │    └── key: (15)
+      │    │    │    │    │    │    │    ├── inner-join (cross)
+      │    │    │    │    │    │    │    │    ├── columns: t1._decimal:21 t1.rowid:23!null t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
+      │    │    │    │    │    │    │    │    ├── key: (23,31,39)
+      │    │    │    │    │    │    │    │    ├── fd: (23)-->(21), (31)-->(28), (39)-->(33,35)
+      │    │    │    │    │    │    │    │    ├── scan tab_orig [as=t1]
+      │    │    │    │    │    │    │    │    │    ├── columns: t1._decimal:21 t1.rowid:23!null
+      │    │    │    │    │    │    │    │    │    ├── key: (23)
+      │    │    │    │    │    │    │    │    │    └── fd: (23)-->(21)
+      │    │    │    │    │    │    │    │    ├── inner-join (cross)
+      │    │    │    │    │    │    │    │    │    ├── columns: t2._bool:28 t2.rowid:31!null t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
+      │    │    │    │    │    │    │    │    │    ├── key: (31,39)
+      │    │    │    │    │    │    │    │    │    ├── fd: (31)-->(28), (39)-->(33,35)
+      │    │    │    │    │    │    │    │    │    ├── scan tab_orig [as=t2]
+      │    │    │    │    │    │    │    │    │    │    ├── columns: t2._bool:28 t2.rowid:31!null
+      │    │    │    │    │    │    │    │    │    │    ├── key: (31)
+      │    │    │    │    │    │    │    │    │    │    └── fd: (31)-->(28)
+      │    │    │    │    │    │    │    │    │    ├── scan tab_orig [as=t3]
+      │    │    │    │    │    │    │    │    │    │    ├── columns: t3._int2:33 t3._timestamptz:35 t3.rowid:39!null
+      │    │    │    │    │    │    │    │    │    │    ├── key: (39)
+      │    │    │    │    │    │    │    │    │    │    └── fd: (39)-->(33,35)
+      │    │    │    │    │    │    │    │    │    └── filters (true)
+      │    │    │    │    │    │    │    │    └── filters (true)
       │    │    │    │    │    │    │    └── filters (true)
+      │    │    │    │    │    │    ├── project
+      │    │    │    │    │    │    │    ├── columns: true:45!null
+      │    │    │    │    │    │    │    ├── outer: (6)
+      │    │    │    │    │    │    │    ├── cardinality: [0 - 1]
+      │    │    │    │    │    │    │    ├── key: ()
+      │    │    │    │    │    │    │    ├── fd: ()-->(45)
+      │    │    │    │    │    │    │    ├── select
+      │    │    │    │    │    │    │    │    ├── outer: (6)
+      │    │    │    │    │    │    │    │    ├── cardinality: [0 - 1]
+      │    │    │    │    │    │    │    │    ├── key: ()
+      │    │    │    │    │    │    │    │    ├── with-scan &1 (w0)
+      │    │    │    │    │    │    │    │    │    ├── mapping:
+      │    │    │    │    │    │    │    │    │    ├── cardinality: [1 - 1]
+      │    │    │    │    │    │    │    │    │    └── key: ()
+      │    │    │    │    │    │    │    │    └── filters
+      │    │    │    │    │    │    │    │         └── t0._string:6 = 1 [outer=(6), constraints=(/6: [/1 - /1]; tight), fd=()-->(6)]
+      │    │    │    │    │    │    │    └── projections
+      │    │    │    │    │    │    │         └── true [as=true:45]
       │    │    │    │    │    │    └── filters (true)
-      │    │    │    │    │    └── filters
-      │    │    │    │    │         └── t0._string:6 = 1 [outer=(6), constraints=(/6: [/1 - /1]; tight), fd=()-->(6)]
-      │    │    │    │    └── aggregations
-      │    │    │    │         ├── const-agg [as=t2._bool:28, outer=(28)]
-      │    │    │    │         │    └── t2._bool:28
-      │    │    │    │         ├── const-agg [as=t3._int2:33, outer=(33)]
-      │    │    │    │         │    └── t3._int2:33
-      │    │    │    │         ├── const-agg [as=t3._timestamptz:35, outer=(35)]
-      │    │    │    │         │    └── t3._timestamptz:35
-      │    │    │    │         └── const-agg [as=t1._decimal:21, outer=(21)]
-      │    │    │    │              └── t1._decimal:21
+      │    │    │    │    │    └── aggregations
+      │    │    │    │    │         ├── const-agg [as=true_agg:46, outer=(45)]
+      │    │    │    │    │         │    └── true:45
+      │    │    │    │    │         ├── const-agg [as=t2._bool:28, outer=(28)]
+      │    │    │    │    │         │    └── t2._bool:28
+      │    │    │    │    │         ├── const-agg [as=t3._int2:33, outer=(33)]
+      │    │    │    │    │         │    └── t3._int2:33
+      │    │    │    │    │         ├── const-agg [as=t3._timestamptz:35, outer=(35)]
+      │    │    │    │    │         │    └── t3._timestamptz:35
+      │    │    │    │    │         └── const-agg [as=t1._decimal:21, outer=(21)]
+      │    │    │    │    │              └── t1._decimal:21
+      │    │    │    │    └── filters
+      │    │    │    │         └── true_agg:46 IS NOT NULL [outer=(46), constraints=(/46: (/NULL - ]; tight)]
       │    │    │    ├── scan tab_orig [as=t4]
       │    │    │    │    └── columns: t4._int8:49 t4._timestamptz:50
       │    │    │    └── filters
@@ -2218,40 +2244,34 @@ norm expect=TryDecorrelateScalarGroupBy
 SELECT * FROM (SELECT i, 'foo' AS cst FROM a) WHERE 5=(SELECT max(y) FROM xy WHERE x=i)
 ----
 project
- ├── columns: i:2!null cst:7!null
+ ├── columns: i:2 cst:7!null
  ├── fd: ()-->(7)
  ├── select
- │    ├── columns: k:1!null i:2!null max:11!null
+ │    ├── columns: k:1!null i:2 max:11!null
  │    ├── key: (1)
  │    ├── fd: ()-->(11), (1)-->(2)
  │    ├── group-by
- │    │    ├── columns: k:1!null i:2!null max:11!null
+ │    │    ├── columns: k:1!null i:2 max:11
  │    │    ├── grouping columns: k:1!null
  │    │    ├── key: (1)
  │    │    ├── fd: (1)-->(2,11)
- │    │    ├── inner-join (hash)
- │    │    │    ├── columns: k:1!null i:2!null x:8!null y:9!null
- │    │    │    ├── multiplicity: left-rows(zero-or-one), right-rows(zero-or-more)
+ │    │    ├── left-join (hash)
+ │    │    │    ├── columns: k:1!null i:2 x:8 y:9
+ │    │    │    ├── multiplicity: left-rows(exactly-one), right-rows(zero-or-more)
  │    │    │    ├── key: (1)
- │    │    │    ├── fd: (1)-->(2), (8)-->(9), (2)==(8), (8)==(2)
+ │    │    │    ├── fd: (1)-->(2,8,9), (8)-->(9)
  │    │    │    ├── scan a
  │    │    │    │    ├── columns: k:1!null i:2
  │    │    │    │    ├── key: (1)
  │    │    │    │    └── fd: (1)-->(2)
- │    │    │    ├── select
- │    │    │    │    ├── columns: x:8!null y:9!null
+ │    │    │    ├── scan xy
+ │    │    │    │    ├── columns: x:8!null y:9
  │    │    │    │    ├── key: (8)
- │    │    │    │    ├── fd: (8)-->(9)
- │    │    │    │    ├── scan xy
- │    │    │    │    │    ├── columns: x:8!null y:9
- │    │    │    │    │    ├── key: (8)
- │    │    │    │    │    └── fd: (8)-->(9)
- │    │    │    │    └── filters
- │    │    │    │         └── y:9 IS NOT NULL [outer=(9), constraints=(/9: (/NULL - ]; tight)]
+ │    │    │    │    └── fd: (8)-->(9)
  │    │    │    └── filters
  │    │    │         └── x:8 = i:2 [outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ]), fd=(2)==(8), (8)==(2)]
  │    │    └── aggregations
- │    │         ├── max [as=max:11, outer=(9)]
+ │    │         ├── const-agg [as=max:11, outer=(9)]
  │    │         │    └── y:9
  │    │         └── const-agg [as=i:2, outer=(2)]
  │    │              └── i:2
@@ -2531,7 +2551,7 @@ project
       │    │         │    └── y:5
       │    │         ├── const-agg [as=d:2, outer=(2)]
       │    │         │    └── d:2
-      │    │         └── any-not-null-agg [as=x:4, outer=(4)]
+      │    │         └── const-agg [as=x:4, outer=(4)]
       │    │              └── x:4
       │    └── projections
       │         └── CASE WHEN x:4 IS NOT NULL THEN array_agg:8 ELSE CAST(NULL AS INT8[]) END [as=array_agg:7, outer=(4,8)]
@@ -2597,7 +2617,7 @@ project
       │    │         │    └── s:4
       │    │         ├── const-agg [as=j:5, outer=(5)]
       │    │         │    └── j:5
-      │    │         └── any-not-null-agg [as=canary:12, outer=(12)]
+      │    │         └── const-agg [as=canary:12, outer=(12)]
       │    │              └── canary:12
       │    └── projections
       │         └── CASE WHEN canary:12 IS NOT NULL THEN concat_agg:13 ELSE CAST(NULL AS STRING) END [as=concat_agg:11, outer=(12,13)]
@@ -4051,7 +4071,7 @@ project
       │    │    │         ├── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
       │    │    │         └── (i:2 = y:8) IS NOT false [outer=(2,8)]
       │    │    └── aggregations
-      │    │         ├── bool-or [as=bool_or:11, outer=(10)]
+      │    │         ├── const-agg [as=bool_or:11, outer=(10)]
       │    │         │    └── notnull:10
       │    │         ├── const-agg [as=i:2, outer=(2)]
       │    │         │    └── i:2
@@ -4130,7 +4150,7 @@ project
  │    │         ├── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    │         └── (scalar:11 >= y:8) IS NOT false [outer=(8,11)]
  │    └── aggregations
- │         ├── bool-or [as=bool_or:13, outer=(12)]
+ │         ├── const-agg [as=bool_or:13, outer=(12)]
  │         │    └── notnull:12
  │         ├── const-agg [as=s:4, outer=(4)]
  │         │    └── s:4
@@ -4178,7 +4198,7 @@ project
       │    │    └── filters
       │    │         └── x:10 = k:1 [outer=(1,10), constraints=(/1: (/NULL - ]; /10: (/NULL - ]), fd=(1)==(10), (10)==(1)]
       │    └── aggregations
-      │         ├── const-not-null-agg [as=true_agg:14, outer=(13)]
+      │         ├── const-agg [as=true_agg:14, outer=(13)]
       │         │    └── true:13
       │         ├── const-agg [as=i:2, outer=(2)]
       │         │    └── i:2
@@ -4542,7 +4562,7 @@ project
       │    │    │    └── filters
       │    │    │         └── u:10 = y:8 [outer=(8,10), constraints=(/8: (/NULL - ]; /10: (/NULL - ]), fd=(8)==(10), (10)==(8)]
       │    │    └── aggregations
-      │    │         └── const-not-null-agg [as=true_agg:14, outer=(13)]
+      │    │         └── const-agg [as=true_agg:14, outer=(13)]
       │    │              └── true:13
       │    └── projections
       │         └── true_agg:14 IS NOT NULL [as=exists:15, outer=(14)]
@@ -4599,7 +4619,7 @@ project
       │    │    │         ├── v:11 = i:2 [outer=(2,11), constraints=(/2: (/NULL - ]; /11: (/NULL - ]), fd=(2)==(11), (11)==(2)]
       │    │    │         └── (x:7 = v:11) IS NOT false [outer=(7,11)]
       │    │    └── aggregations
-      │    │         ├── bool-or [as=bool_or:14, outer=(13)]
+      │    │         ├── const-agg [as=bool_or:14, outer=(13)]
       │    │         │    └── notnull:13
       │    │         ├── const-agg [as=y:8, outer=(8)]
       │    │         │    └── y:8
@@ -4695,7 +4715,7 @@ project
  │    │    └── filters
  │    │         └── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    └── aggregations
- │         └── const-not-null-agg [as=true_agg:12, outer=(11)]
+ │         └── const-agg [as=true_agg:12, outer=(11)]
  │              └── true:11
  └── projections
       └── true_agg:12 IS NOT NULL [as=column1:14, outer=(12)]
@@ -4738,7 +4758,7 @@ project
  │    │    └── filters
  │    │         └── x:7 = k:1 [outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    └── aggregations
- │         └── bool-or [as=bool_or:12, outer=(11)]
+ │         └── const-agg [as=bool_or:12, outer=(11)]
  │              └── notnull:11
  └── projections
       └── CASE WHEN bool_or:12 THEN true WHEN bool_or:12 IS NULL THEN false ELSE CAST(NULL AS BOOL) END [as=column1:14, outer=(12)]

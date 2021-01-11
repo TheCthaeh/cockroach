@@ -369,24 +369,18 @@ project
  ├── immutable
  ├── fd: (3)-->(7)
  ├── select
- │    ├── columns: k:1!null f:3 sum:6!null
+ │    ├── columns: f:3 sum:6!null
  │    ├── immutable
- │    ├── key: (1)
- │    ├── fd: ()-->(6), (1)-->(3)
- │    ├── group-by
- │    │    ├── columns: k:1!null f:3 sum:6!null
- │    │    ├── grouping columns: k:1!null
- │    │    ├── key: (1)
- │    │    ├── fd: (1)-->(3,6)
+ │    ├── fd: ()-->(6)
+ │    ├── project
+ │    │    ├── columns: sum:6!null f:3
+ │    │    ├── immutable
  │    │    ├── scan a
  │    │    │    ├── columns: k:1!null f:3
  │    │    │    ├── key: (1)
  │    │    │    └── fd: (1)-->(3)
- │    │    └── aggregations
- │    │         ├── sum [as=sum:6, outer=(1)]
- │    │         │    └── k:1
- │    │         └── const-agg [as=f:3, outer=(3)]
- │    │              └── f:3
+ │    │    └── projections
+ │    │         └── k:1::DECIMAL [as=sum:6, outer=(1), immutable]
  │    └── filters
  │         └── sum:6 = 100 [outer=(6), immutable, constraints=(/6: [/100 - /100]; tight), fd=()-->(6)]
  └── projections
@@ -1579,26 +1573,18 @@ norm
 SELECT k FROM (SELECT k, min(s) FROM a GROUP BY k HAVING sum(i) > 5)
 ----
 project
- ├── columns: k:1!null
+ ├── columns: k:1
  ├── immutable
- ├── key: (1)
  └── select
-      ├── columns: k:1!null sum:7!null
+      ├── columns: sum:7!null
       ├── immutable
-      ├── key: (1)
-      ├── fd: (1)-->(7)
-      ├── group-by
-      │    ├── columns: k:1!null sum:7
-      │    ├── grouping columns: k:1!null
-      │    ├── key: (1)
-      │    ├── fd: (1)-->(7)
+      ├── project
+      │    ├── columns: sum:7
+      │    ├── immutable
       │    ├── scan a
-      │    │    ├── columns: k:1!null i:2
-      │    │    ├── key: (1)
-      │    │    └── fd: (1)-->(2)
-      │    └── aggregations
-      │         └── sum [as=sum:7, outer=(2)]
-      │              └── i:2
+      │    │    └── columns: i:2
+      │    └── projections
+      │         └── i:2::DECIMAL [as=sum:7, outer=(2), immutable]
       └── filters
            └── sum:7 > 5 [outer=(7), immutable, constraints=(/7: (/5 - ]; tight)]
 

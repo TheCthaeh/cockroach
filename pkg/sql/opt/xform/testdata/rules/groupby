@@ -355,7 +355,7 @@ project
       │    ├── fd: (1)-->(2)
       │    └── ordering: +1
       └── aggregations
-           └── min [as=min:5, outer=(2)]
+           └── const-agg [as=min:5, outer=(2)]
                 └── y:2
 
 # ReplaceScalarMinWithLimit does not apply on multiple aggregations
@@ -416,7 +416,7 @@ group-by
  │    ├── fd: (1)-->(2)
  │    └── ordering: +1
  └── aggregations
-      └── min [as=min:5, outer=(2)]
+      └── const-agg [as=min:5, outer=(2)]
            └── y:2
 
 # ReplaceScalarMaxWithLimit does not apply with
@@ -436,7 +436,7 @@ group-by
  │    ├── fd: (1)-->(2)
  │    └── ordering: +1
  └── aggregations
-      └── max [as=max:5, outer=(2)]
+      └── const-agg [as=max:5, outer=(2)]
            └── y:2
 
 # ReplaceScalarMinWithLimit does not apply to non-scalar
@@ -458,7 +458,7 @@ project
       │    ├── fd: (1)-->(2)
       │    └── ordering: +1
       └── aggregations
-           ├── min [as=min:5, outer=(1)]
+           ├── const-agg [as=min:5, outer=(1)]
            │    └── x:1
            └── count [as=count:6, outer=(2)]
                 └── y:2
@@ -482,7 +482,7 @@ project
       │    ├── fd: (1)-->(2)
       │    └── ordering: +1
       └── aggregations
-           ├── max [as=max:5, outer=(1)]
+           ├── const-agg [as=max:5, outer=(1)]
            │    └── x:1
            └── count [as=count:6, outer=(2)]
                 └── y:2

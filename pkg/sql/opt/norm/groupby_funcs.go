@@ -16,6 +16,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/props/physical"
 	"github.com/cockroachdb/cockroach/pkg/sql/rowenc"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
+	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"github.com/cockroachdb/cockroach/pkg/util/encoding"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
@@ -420,5 +421,165 @@ func canEliminateGroupByJoin(
 		}
 	}
 	// All aggregates ignore duplicates.
+	return true
+}
+
+// CanSimplifyAggs returns true if at least one of the given aggregations can be
+// simplified under the assumption of a single-row input. For example,
+// max(x) => x, when x has only one row.
+func (c *CustomFuncs) CanSimplifyAggs(aggs memo.AggregationsExpr) bool {
+	for i := range aggs {
+		if !opt.IsAggregateOp(aggs[i].Agg) {
+			// Aggregate can't be an AggFilter or AggDistinct.
+			continue
+		}
+		op := aggs[i].Agg.Op()
+		if op == opt.ConstAggOp || op == opt.FirstAggOp {
+			// ConstAgg and FirstAgg cannot be further simplified, since they are
+			// already effectively no-ops in the single row case.
+			continue
+		}
+		if op == opt.SumOp || op == opt.AvgOp {
+			// SumOp and AvgOp are not included in AggregateTransmitsSingleRow because
+			// they may cast an integer input to a decimal output. However, they may
+			// still be simplified with the possible addition of a cast projection.
+			return true
+		}
+		if op == opt.CountRowsOp {
+			// CountRows will simply return '1' on a single-row input, so it can be
+			// replaced by a projection.
+			return true
+		}
+		if opt.AggregateTransmitsSingleRow(op) {
+			// Any aggregation that returns a single input row unchanged can be
+			// simplified to a ConstAgg.
+			return true
+		}
+	}
+	return false
+}
+
+// SimplifyGroupBy returns a GroupBy (or ScalarGroupBy) with simplified
+// aggregations. It is assumed that the grouping columns form a key over the
+// input. The resulting expression may be wrapped in a Project.
+func (c *CustomFuncs) SimplifyGroupBy(
+	op opt.Operator, input memo.RelExpr, oldAggs memo.AggregationsExpr, private *memo.GroupingPrivate,
+) memo.RelExpr {
+	newAggs := make(memo.AggregationsExpr, 0, len(oldAggs))
+	var projections memo.ProjectionsExpr
+	var passthrough opt.ColSet
+	for i := range oldAggs {
+		if !opt.IsAggregateOp(oldAggs[i].Agg) {
+			newAggs = append(newAggs, oldAggs[i])
+			passthrough.Add(oldAggs[i].Col)
+			continue
+		}
+		op := oldAggs[i].Agg.Op()
+		col := oldAggs[i].Col
+		if op == opt.CountRowsOp {
+			// CountRows will simply return '1' on a single-row input, so it can be
+			// replaced by a projection.
+			proj := c.f.ConstructProjectionsItem(
+				c.f.ConstructConst(
+					tree.NewDInt(tree.DInt(1)),
+					types.Int,
+				),
+				col,
+			)
+			projections = append(projections, proj)
+			continue
+		}
+		if op == opt.ConstAggOp || op == opt.FirstAggOp {
+			// ConstAgg and FirstAgg cannot be further simplified, since they are
+			// already effectively no-ops in the single row case.
+			newAggs = append(newAggs, oldAggs[i])
+			passthrough.Add(oldAggs[i].Col)
+			continue
+		}
+		// Any simplifiable aggregation (beside CountRows which has been handled)
+		// will have a single Variable input as its first child.
+		if oldAggs[i].Agg.ChildCount() == 0 {
+			newAggs = append(newAggs, oldAggs[i])
+			passthrough.Add(oldAggs[i].Col)
+			continue
+		}
+		inputVar, ok := oldAggs[i].Agg.Child(0).(*memo.VariableExpr)
+		if !ok {
+			newAggs = append(newAggs, oldAggs[i])
+			passthrough.Add(oldAggs[i].Col)
+			continue
+		}
+		if op == opt.SumOp || op == opt.AvgOp {
+			// SumOp and AvgOp are not included in AggregateTransmitsSingleRow because
+			// they may cast an integer input to a decimal output. However, they may
+			// still be simplified with the possible addition of a cast projection.
+			constAgg := c.f.ConstructAggregationsItem(c.f.ConstructConstAgg(inputVar), inputVar.Col)
+			newAggs = append(newAggs, constAgg)
+			var projInput opt.ScalarExpr
+			projInput = inputVar
+			if inputVar.DataType() == types.Int {
+				// Sum and Avg both return a Decimal output upon Int input, so we must
+				// cast this column to a decimal. Other input types are reflected in the
+				// output.
+				projInput = c.f.ConstructCast(projInput, types.Decimal)
+			}
+			proj := c.f.ConstructProjectionsItem(projInput, col)
+			projections = append(projections, proj)
+			continue
+		}
+		if opt.AggregateTransmitsSingleRow(op) {
+			// Any aggregation that returns a single input row unchanged can be
+			// simplified to a ConstAgg.
+			constAgg := c.f.ConstructAggregationsItem(c.f.ConstructConstAgg(inputVar), inputVar.Col)
+			newAggs = append(newAggs, constAgg)
+			proj := c.f.ConstructProjectionsItem(inputVar, col)
+			projections = append(projections, proj)
+			continue
+		}
+		newAggs = append(newAggs, oldAggs[i])
+		passthrough.Add(oldAggs[i].Col)
+	}
+	var groupby memo.RelExpr
+	if op == opt.GroupByOp {
+		groupby = c.f.ConstructGroupBy(input, newAggs, private)
+	} else if op == opt.ScalarGroupByOp {
+		groupby = c.f.ConstructScalarGroupBy(input, newAggs, private)
+	} else {
+		panic(errors.AssertionFailedf(
+			"expected a GroupBy or ScalarGroupBy, got: %s", op.String()))
+	}
+	return c.f.ConstructProject(groupby, projections, passthrough)
+}
+
+// ScalarGroupByHasOneRow verifies that if the given operator is a
+// ScalarGroupBy, its input is statically known to return exactly one row. This
+// is useful because a ScalarGroupBy returns Null on an empty input, which
+// prevents simplification of its aggregations.
+func (c *CustomFuncs) ScalarGroupByHasOneRow(op opt.Operator, input memo.RelExpr) bool {
+	if op == opt.ScalarGroupByOp {
+		return input.Relational().Cardinality.IsOne()
+	}
+	return true
+}
+
+// OnlyVarConstAggs returns true if every aggregation in the given
+// AggregationsExpr is a ConstAgg which takes a variable as input and outputs
+// the same column as the variable.
+func (c *CustomFuncs) OnlyVarConstAggs(aggs memo.AggregationsExpr) bool {
+	for i := range aggs {
+		if aggs[i].Agg.Op() != opt.ConstAggOp {
+			return false
+		}
+		if aggs[i].Agg.ChildCount() != 1 {
+			return false
+		}
+		varInput, ok := aggs[i].Agg.Child(0).(*memo.VariableExpr)
+		if !ok {
+			return false
+		}
+		if varInput.Col != aggs[i].Col {
+			return false
+		}
+	}
 	return true
 }

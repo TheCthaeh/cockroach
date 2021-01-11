@@ -460,6 +460,28 @@ func AggregateIgnoresDuplicates(op Operator) bool {
 	}
 }
 
+// AggregateTransmitsSingleRow returns true if the given operator returns a
+// single-row input unchanged. For example, max(1) = 1 and max(Null) = Null.
+func AggregateTransmitsSingleRow(op Operator) bool {
+	switch op {
+	case AnyNotNullAggOp, BitAndAggOp, BitOrAggOp, BoolAndOp, BoolOrOp,
+		ConstAggOp, ConstNotNullAggOp, FirstAggOp, MaxOp, MinOp, SumIntOp, XorAggOp:
+		return true
+
+	case ArrayAggOp, AvgOp, ConcatAggOp, CountOp, CorrOp, CountRowsOp, SumOp,
+	  SqrDiffOp, VarianceOp, StdDevOp, JsonAggOp, JsonbAggOp, StringAggOp,
+	  PercentileDiscOp, PercentileContOp, StdDevPopOp, STMakeLineOp, VarPopOp,
+	  JsonObjectAggOp, JsonbObjectAggOp, STCollectOp, STExtentOp, STUnionOp,
+	  CovarPopOp, CovarSampOp, RegressionAvgXOp, RegressionAvgYOp,
+	  RegressionInterceptOp, RegressionR2Op, RegressionSlopeOp, RegressionSXXOp,
+	  RegressionSXYOp, RegressionSYYOp, RegressionCountOp:
+		return false
+
+	default:
+		panic(errors.AssertionFailedf("unhandled op %s", log.Safe(op)))
+	}
+}
+
 // OpaqueMetadata is an object stored in OpaqueRelExpr and passed
 // through to the exec factory.
 type OpaqueMetadata interface {

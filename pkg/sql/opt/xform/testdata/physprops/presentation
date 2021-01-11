@@ -80,7 +80,7 @@ group-by
  │    ├── fd: (1)-->(2)
  │    └── ordering: +1
  └── aggregations
-      ├── max [as=max:4, outer=(2)]
+      ├── const-agg [as=max:4, outer=(2)]
       │    └── y:2
       └── const-agg [as=y:2, outer=(2)]
            └── y:2

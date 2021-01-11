@@ -2634,7 +2634,7 @@ values
 norm expect=EliminateJoinNoColsRight
 SELECT * FROM xy WHERE EXISTS(SELECT generate_series(x, 10))
 ----
-group-by
+distinct-on
  ├── columns: x:1!null y:2
  ├── grouping columns: x:1!null
  ├── immutable
