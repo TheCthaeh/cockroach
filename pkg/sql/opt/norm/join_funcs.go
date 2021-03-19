@@ -455,7 +455,7 @@ func (c *CustomFuncs) GetEquivFD(
 func (c *CustomFuncs) JoinFiltersMatchAllLeftRows(
 	left, right memo.RelExpr, on memo.FiltersExpr,
 ) bool {
-	multiplicity := memo.DeriveJoinMultiplicityFromInputs(left, right, on)
+	multiplicity := memo.DeriveJoinMultiplicityFromInputs(left, right, &on)
 	return multiplicity.JoinFiltersMatchAllLeftRows()
 }
 

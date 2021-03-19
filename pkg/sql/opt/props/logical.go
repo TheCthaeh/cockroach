@@ -13,6 +13,7 @@ package props
 import (
 	"github.com/cockroachdb/cockroach/pkg/sql/opt"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/constraint"
+	"github.com/cockroachdb/cockroach/pkg/sql/opt/memo"
 )
 
 // AvailableRuleProps is a bit set that indicates when lazily-populated Rule
@@ -38,6 +39,8 @@ const (
 	// UnfilteredCols is set when the Relational.Rule.UnfilteredCols field is
 	// populated.
 	UnfilteredCols
+
+	ConstraintCache
 
 	// WithUses is set when the Shared.Rule.WithUses field is populated.
 	WithUses
@@ -271,6 +274,8 @@ type Relational struct {
 		// UnfilteredCols is lazily populated by GetJoinMultiplicityFromInputs. It
 		// is only valid once the Rule.Available.UnfilteredCols bit has been set.
 		UnfilteredCols opt.ColSet
+
+		ConstraintCache memo.ConstraintCache
 	}
 }
 

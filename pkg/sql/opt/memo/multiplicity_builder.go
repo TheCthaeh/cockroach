@@ -13,6 +13,7 @@ package memo
 import (
 	"github.com/cockroachdb/cockroach/pkg/sql/opt"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/cat"
+	"github.com/cockroachdb/cockroach/pkg/sql/opt/constraint"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/props"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/errors"
@@ -29,7 +30,7 @@ func initJoinMultiplicity(in RelExpr) {
 		// Calculate JoinMultiplicity and set the multiplicity field of the join.
 		left := t.Child(0).(RelExpr)
 		right := t.Child(1).(RelExpr)
-		filters := *t.Child(2).(*FiltersExpr)
+		filters := t.Child(2).(*FiltersExpr)
 		multiplicity := DeriveJoinMultiplicityFromInputs(left, right, filters)
 		t.(joinWithMultiplicity).setMultiplicity(multiplicity)
 
@@ -60,7 +61,7 @@ func GetJoinMultiplicity(in RelExpr) props.JoinMultiplicity {
 // property is used in calculating the JoinMultiplicity, and is lazily derived
 // by a call to deriveUnfilteredCols.
 func DeriveJoinMultiplicityFromInputs(
-	left, right RelExpr, filters FiltersExpr,
+	left, right RelExpr, filters *FiltersExpr,
 ) props.JoinMultiplicity {
 	leftMultiplicity := getJoinLeftMultiplicityVal(left, right, filters)
 	rightMultiplicity := getJoinLeftMultiplicityVal(right, left, filters)
@@ -144,13 +145,209 @@ func deriveUnfilteredCols(in RelExpr) opt.ColSet {
 	return relational.Rule.UnfilteredCols
 }
 
+// ConstraintCache describes whether and how columns have been filtered. This
+// allows calculation of join multiplicity properties, as well as using
+// transitive equality to copy filters between sides of a join. It does not
+// necessarily exhaustively describe the filters that have been applied.
+type ConstraintCache struct {
+	// tightCols is the set of columns which are tightly described by the cached
+	// constraints. In other words, tight columns have not been filtered any more
+	// than is specified by the cached constraints.
+	tightCols opt.ColSet
+
+	// cached is a set of constraints that describe how input columns have been
+	// filtered. Each constraint is on exactly one column.
+	cached []*constraint.Constraint
+
+	// equivFDs is a FuncDepSet that specifies which columns are equivalent to
+	// one another. This is crucial to the proper functioning of tightCols
+	equivFDs *props.FuncDepSet
+}
+
+// addFilter caches useful information about the given filter. In some cases,
+// a reference the filter itself may be stored (see the below comments for the
+// conditions). Otherwise, the set of tight columns will be modified to reflect
+// application of the filter.
+func (cache *ConstraintCache) addFilter(filter *FiltersItem) {
+	if cache.equivFDs == nil {
+		panic(errors.AssertionFailedf("constraint cache has no func deps"))
+	}
+
+	// We only want to cache a constraint under the following conditions:
+	//   1. The filter references only a single column.
+	//   2. The filter has exactly one constraint which is on the referenced
+	//      column.
+	// These conditions ensure that the filter applies not just to the referenced
+	// column, but to all equivalent columns as well. For example,
+	// (a == b AND a < 5) => (b < 5). In addition, it is easier to prove
+	// implication for spans than for filters (this is necessary for calculating
+	// multiplicity properties).
+	sProps := filter.ScalarProps()
+	if sProps.OuterCols.Len() != 1 || !isSingleColumnConstraint(sProps.Constraints) {
+		// Since the filter cannot be cached, no columns are tight.
+		cache.tightCols = opt.ColSet{}
+		return
+	}
+	if sProps.TightConstraints && cache.tightCols.Intersects(sProps.OuterCols) {
+		// The constraint tightly describes the filter and the column is only
+		// filtered by this filter.
+		cache.tightCols = cache.equivFDs.ComputeEquivClosure(sProps.OuterCols)
+	} else {
+		cache.tightCols = opt.ColSet{}
+	}
+	cache.cached = append(cache.cached, sProps.Constraints.Constraint(0))
+}
+
+func isSingleColumnConstraint(constraints *constraint.Set) bool {
+	return constraints != nil && constraints.Length() != 1 &&
+		constraints.Constraint(0).Columns.Count() != 1
+}
+
+// TODO: FIX THIS COMMENT
+// implies returns true if it can be proven that rightCol is not filtered any
+// more strictly than leftCol. In other words, if any values are filtered from
+// rightCol, those values must also be removed from leftCol. Ex:
+//   left: [/1 - /10] right: unconstrained => true
+//
+// Note that a false result does not imply that the opposite is true.
+func (cache *ConstraintCache) implies(evalCtx *tree.EvalContext, cons *constraint.Constraint,
+	col opt.ColumnID) bool {
+	if cons == nil || !cache.tightCols.Contains(col) {
+		return false
+	}
+	if cache.equivFDs == nil {
+		panic(errors.AssertionFailedf("constraint cache has no func deps"))
+	}
+
+	// We want to prove that the cached constraint is at least as strict as the
+	// given constraint. In other words, each cached span should fit inside
+	// given one. Ex:
+	//   Cached: [/1 - /2] Given: [/0 - /3] => true
+	//   Cached: [/1 - /2] Given: [/1 - /2] => true
+	//   Cached: [/1 - /2] Given: [/1 - /1] => false
+	// Note that this algorithm will miss some cases because the cached
+	// constraints have AND semantics; e.g. [/1 - /2] AND [/2 - /3] == [/2 - /2].
+	// So, if multiple constraints are cached for a given group of equivalent
+	// columns,
+	cols := cache.equivFDs.ComputeEquivClosure(opt.MakeColSet(col))
+	for i := range cache.cached {
+		if !cols.Intersects(cache.cached[i].Columns.ColSet()) {
+			// This cached constraint does not reference a column that is equivalent
+			// to the one referenced by the given constraint, so it cannot prove the
+			// given constraint redundant.
+			continue
+		}
+		if cons.Contains(evalCtx, cache.cached[i]) {
+			// Within the cached slice of constraints, constraints on equivalent
+			// columns have AND semantics:
+			// (/1 [/5 - ]), (/1 [ - /9]) == (/1 [/5 - /9])
+			// Ideally, all constraints on any given equivalent group of columns
+			// would be merged into one - this would catch more cases (as above).
+			// However, since this is expensive, we only check that at least one of
+			// these constraints renders the given constraint redundant.
+			return true
+		}
+	}
+	return false
+}
+
+func deriveConstraintCache(in RelExpr) *ConstraintCache {
+	relational := in.Relational()
+	if relational.IsAvailable(props.ConstraintCache) {
+		return &relational.Rule.ConstraintCache
+	}
+	relational.Rule.Available |= props.ConstraintCache
+	var cache ConstraintCache
+
+	switch t := in.(type) {
+	case *ScanExpr:
+		// If no rows are being removed from the table, all its columns are tight.
+		// No rows are removed from a table if this is an un-limited, unconstrained
+		// scan over a non-partial index.
+		//
+		// We add all columns (not just output columns) because while non-output
+		// columns cannot be used by operators, they can be used to make a statement
+		// about the cardinality of their owner table. As an example, take this
+		// query:
+		//
+		//   CREATE TABLE xy (x INT PRIMARY KEY, y INT);
+		//   CREATE TABLE kr (k INT PRIMARY KEY, r INT NOT NULL REFERENCES xy(x));
+		//   SELECT k FROM kr INNER JOIN xy ON True;
+		//
+		// Rows from the left side of this query will be preserved because of the
+		// non-null foreign key relation - rows in kr imply rows in xy. However,
+		// the columns from xy are not output columns, so in order to see that this
+		// is the case we must bubble up non-output columns.
+		md := t.Memo().Metadata()
+		baseTable := md.Table(t.Table)
+		if t.IsUnfiltered(md) {
+			for i, cnt := 0, baseTable.ColumnCount(); i < cnt; i++ {
+				cache.tightCols.Add(t.Table.ColumnID(i))
+			}
+		}
+		cache.equivFDs = &t.Relational().FuncDeps
+
+	case *ProjectExpr:
+		// Project never filters rows, so it passes through unfiltered columns.
+		// Include non-output columns for the same reasons as for the Scan operator.
+		cache = *deriveConstraintCache(t.Input)
+
+	case *SelectExpr:
+		cache = *deriveConstraintCache(t.Input)
+		cache.equivFDs = &t.Relational().FuncDeps
+		for i := range t.Filters {
+			cache.addFilter(&t.Filters[i])
+		}
+
+	case *InnerJoinExpr, *LeftJoinExpr, *FullJoinExpr:
+		left := t.Child(0).(RelExpr)
+		right := t.Child(1).(RelExpr)
+		multiplicity := GetJoinMultiplicity(t)
+
+		leftCache := *deriveConstraintCache(left)
+		rightCache := *deriveConstraintCache(right)
+		cache.equivFDs = &t.Relational().FuncDeps
+
+		if leftCache.cached != nil {
+			cache.cached = append(leftCache.cached, rightCache.cached...)
+		} else {
+			cache.cached = rightCache.cached
+		}
+
+		// Propagate the tight columns from the left and right inputs.
+		if multiplicity.JoinPreservesLeftRows(t.Op()) {
+			cache.tightCols.UnionWith(leftCache.tightCols)
+		}
+		if multiplicity.JoinPreservesRightRows(t.Op()) {
+			cache.tightCols.UnionWith(rightCache.tightCols)
+		}
+
+	case *SemiJoinExpr:
+		// Simply propagate the cache from the left input.
+		cache = *deriveConstraintCache(t.Left)
+		cache.equivFDs = &t.Relational().FuncDeps
+		multiplicity := GetJoinMultiplicity(t)
+		if !multiplicity.JoinPreservesLeftRows(t.Op()) {
+			// The join filters may remove rows from the left input, so no columns are
+			// tight.
+			cache.tightCols = opt.ColSet{}
+		}
+
+	default:
+		// No tight columns and no constraints propagated.
+	}
+
+	relational.Rule.ConstraintCache = cache
+	return &cache
+}
+
 // getJoinLeftMultiplicityVal returns a MultiplicityValue that describes whether
 // a join with the given properties would duplicate or filter the rows of its
 // left input.
 //
 // The duplicated and filtered flags will be set unless it can be statically
 // proven that no rows will be duplicated or filtered respectively.
-func getJoinLeftMultiplicityVal(left, right RelExpr, filters FiltersExpr) props.MultiplicityValue {
+func getJoinLeftMultiplicityVal(left, right RelExpr, filters *FiltersExpr) props.MultiplicityValue {
 	multiplicity := props.MultiplicityIndeterminateVal
 	if filtersMatchLeftRowsAtMostOnce(left, right, filters) {
 		multiplicity |= props.MultiplicityNotDuplicatedVal
@@ -202,9 +399,9 @@ func getJoinLeftMultiplicityVal(left, right RelExpr, filters FiltersExpr) props.
 //
 // In this example, no rows from x are duplicated, while the '1' row from a is
 // duplicated.
-func filtersMatchLeftRowsAtMostOnce(left, right RelExpr, filters FiltersExpr) bool {
+func filtersMatchLeftRowsAtMostOnce(left, right RelExpr, filters *FiltersExpr) bool {
 	// Condition #1.
-	if len(filters) == 0 && right.Relational().Cardinality.IsZeroOrOne() {
+	if len(*filters) == 0 && right.Relational().Cardinality.IsZeroOrOne() {
 		return true
 	}
 
@@ -251,7 +448,7 @@ func filtersMatchLeftRowsAtMostOnce(left, right RelExpr, filters FiltersExpr) bo
 // Note: in the foreign key case, if the key's match method is match simple, all
 // columns in the foreign key must be not-null in order to guarantee that all
 // rows will have a match in the referenced table.
-func filtersMatchAllLeftRows(left, right RelExpr, filters FiltersExpr) bool {
+func filtersMatchAllLeftRows(left, right RelExpr, filters *FiltersExpr) bool {
 	if filters.IsTrue() {
 		// Cross join case.
 		if !right.Relational().Cardinality.CanBeZero() {
@@ -263,7 +460,8 @@ func filtersMatchAllLeftRows(left, right RelExpr, filters FiltersExpr) bool {
 		return checkForeignKeyCase(
 			left.Memo().Metadata(),
 			left.Relational().NotNullCols,
-			deriveUnfilteredCols(right),
+			deriveConstraintCache(left),
+			deriveConstraintCache(right),
 			filters,
 		)
 	}
@@ -276,7 +474,12 @@ func filtersMatchAllLeftRows(left, right RelExpr, filters FiltersExpr) bool {
 	}
 	// Case 2b.
 	return checkForeignKeyCase(
-		left.Memo().Metadata(), left.Relational().NotNullCols, deriveUnfilteredCols(right), filters)
+		left.Memo().Metadata(),
+		left.Relational().NotNullCols,
+		deriveConstraintCache(left),
+		deriveConstraintCache(right),
+		filters,
+	)
 }
 
 // verifyFiltersAreValidEqualities returns true when all of the following
@@ -288,7 +491,7 @@ func filtersMatchAllLeftRows(left, right RelExpr, filters FiltersExpr) bool {
 // 4. All equality columns come from a base table.
 // 5. All left columns come from a single table, and all right columns come from
 //    a single table.
-func verifyFiltersAreValidEqualities(left, right RelExpr, filters FiltersExpr) bool {
+func verifyFiltersAreValidEqualities(left, right RelExpr, filters *FiltersExpr) bool {
 	md := left.Memo().Metadata()
 
 	var leftTab, rightTab opt.TableID
@@ -299,8 +502,8 @@ func verifyFiltersAreValidEqualities(left, right RelExpr, filters FiltersExpr) b
 		return false
 	}
 
-	for i := range filters {
-		eq, _ := filters[i].Condition.(*EqExpr)
+	for i := range *filters {
+		eq, _ := (*filters)[i].Condition.(*EqExpr)
 		if eq == nil {
 			// Condition #1: Conjunct is not an equality comparison.
 			return false
@@ -346,9 +549,9 @@ func verifyFiltersAreValidEqualities(left, right RelExpr, filters FiltersExpr) b
 // checkSelfJoinCase returns true if all equalities in the given FiltersExpr
 // are between columns from the same position in the same base table. Panics
 // if verifyFilters is not checked first.
-func checkSelfJoinCase(md *opt.Metadata, filters FiltersExpr) bool {
-	for i := range filters {
-		eq, _ := filters[i].Condition.(*EqExpr)
+func checkSelfJoinCase(md *opt.Metadata, filters *FiltersExpr) bool {
+	for i := range *filters {
+		eq, _ := (*filters)[i].Condition.(*EqExpr)
 		leftColID := eq.Left.(*VariableExpr).Col
 		rightColID := eq.Right.(*VariableExpr).Col
 		leftTab := md.ColumnMeta(leftColID).Table
@@ -370,11 +573,12 @@ func checkSelfJoinCase(md *opt.Metadata, filters FiltersExpr) bool {
 // referenced columns on the right. Panics if verifyFiltersAreValidEqualities is
 // not checked first.
 func checkForeignKeyCase(
-	md *opt.Metadata, leftNotNullCols, rightUnfilteredCols opt.ColSet, filters FiltersExpr,
+	md *opt.Metadata, leftNotNullCols opt.ColSet,
+	leftConstraintCache, rightConstraintCache *ConstraintCache, filters *FiltersExpr,
 ) bool {
-	if rightUnfilteredCols.Empty() {
-		// There are no unfiltered columns from the right; a valid foreign key
-		// relation is not possible.
+	if rightConstraintCache.tightCols.Empty() && rightConstraintCache.cached == nil {
+		// The cache provides no information about how the right columns have been
+		// filtered; a valid foreign key relation is not possible.
 		return false
 	}
 
@@ -403,7 +607,7 @@ func checkForeignKeyCase(
 			}
 			if rightTableIDs == nil {
 				// Lazily construct rightTableIDs.
-				rightTableIDs = getTableIDsFromCols(md, rightUnfilteredCols)
+				rightTableIDs = getTableIDsFromCols(md, rightConstraintCache.tightCols)
 			}
 			rightTableID, ok := getTableIDFromStableID(md, fk.ReferencedTableID(), rightTableIDs)
 			if !ok {
@@ -443,16 +647,16 @@ func checkForeignKeyCase(
 					// be used in a filter.
 					continue
 				}
-				if !rightUnfilteredCols.Contains(rightColID) {
-					// The right column isn't guaranteed to be unfiltered. It can't be
-					// used in a filter.
+				if !implies(leftConstraintCache, rightConstraintCache, leftColID, rightColID) {
+					// The left column must be filtered at least as strictly as the right
+					// side.
 					continue
 				}
 				if filtersHaveEquality(filters, leftColID, rightColID) {
 					numMatches++
 				}
 			}
-			if fkValid && numMatches == len(filters) {
+			if fkValid && numMatches == len(*filters) {
 				// The foreign key is valid and all the filters conditions follow it.
 				// Checking that numMatches is equal to the length of the filters works
 				// because no two foreign key columns are the same, so any given foreign
@@ -467,9 +671,9 @@ func checkForeignKeyCase(
 // filtersHaveEquality returns true if one of the equalities in the given
 // FiltersExpr is between the two given columns. Panics if verifyFilters is not
 // checked first.
-func filtersHaveEquality(filters FiltersExpr, leftCol, rightCol opt.ColumnID) bool {
-	for i := range filters {
-		eq, _ := filters[i].Condition.(*EqExpr)
+func filtersHaveEquality(filters *FiltersExpr, leftCol, rightCol opt.ColumnID) bool {
+	for i := range *filters {
+		eq, _ := (*filters)[i].Condition.(*EqExpr)
 		leftColID := eq.Left.(*VariableExpr).Col
 		rightColID := eq.Right.(*VariableExpr).Col
 
@@ -513,16 +717,22 @@ func getTableIDsFromCols(md *opt.Metadata, cols opt.ColSet) (tables []opt.TableI
 	return tables
 }
 
+var filterFDCache map[*FiltersExpr]*props.FuncDepSet
+
 // getFiltersFDs returns a FuncDepSet with the FDs from the FiltersItems in
 // the given FiltersExpr.
-func getFiltersFDs(filters FiltersExpr) props.FuncDepSet {
-	if len(filters) == 1 {
-		return filters[0].ScalarProps().FuncDeps
+func getFiltersFDs(filters *FiltersExpr) *props.FuncDepSet {
+	if fds, ok := filterFDCache[filters]; ok {
+		return fds
 	}
-
-	filtersFDs := props.FuncDepSet{}
-	for i := range filters {
-		filtersFDs.AddFrom(&filters[i].ScalarProps().FuncDeps)
+	filterExpr := *filters
+	if len(filterExpr) == 1 {
+		return &filterExpr[0].ScalarProps().FuncDeps
 	}
+	filtersFDs := &props.FuncDepSet{}
+	for i := range filterExpr {
+		filtersFDs.AddFrom(&filterExpr[i].ScalarProps().FuncDeps)
+	}
+	filterFDCache[filters] = filtersFDs
 	return filtersFDs
 }
