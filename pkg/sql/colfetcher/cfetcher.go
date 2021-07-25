@@ -307,6 +307,11 @@ type cFetcher struct {
 		timestampCol []apd.Decimal
 		// tableoidCol is the same as timestampCol but for the tableoid system column.
 		tableoidCol coldata.DatumVec
+
+		// outputBytes tracks the size of the raw kv bytes that have been used to
+		// assembler the output batch so far. It is used to ensure that batches
+		// never get too large.
+		outputBytes int64
 	}
 
 	typs        []*types.T
@@ -804,6 +809,9 @@ func (rf *cFetcher) nextAdapter() {
 // be garbage collected before fetching the next one.
 // gcassert:inline
 func (rf *cFetcher) setNextKV(kv roachpb.KeyValue, needsCopy bool) {
+	rf.machine.outputBytes += int64(len(kv.Key))
+	rf.machine.outputBytes += int64(len(kv.Value.RawBytes))
+
 	if !needsCopy {
 		rf.machine.nextKV = kv
 		return
@@ -1112,13 +1120,17 @@ func (rf *cFetcher) nextBatch(ctx context.Context) (coldata.Batch, error) {
 
 			var emitBatch bool
 			if rf.machine.rowIdx >= rf.machine.batch.Capacity() ||
-				(rf.machine.limitHint > 0 && rf.machine.rowIdx >= rf.machine.limitHint) {
+				(rf.machine.limitHint > 0 && rf.machine.rowIdx >= rf.machine.limitHint) ||
+				(rf.machine.outputBytes > rf.memoryLimit) {
 				// We either
 				//   1. have no more room in our batch, so output it immediately
 				// or
 				//   2. we made it to our limit hint, so output our batch early
 				//      to make sure that we don't bother filling in extra data
 				//      if we don't need to.
+				// or
+				//   3. reached the memory limit for the output batch, so output it
+				//      immediately to avoid further exceeding the limit.
 				emitBatch = true
 				// Update the limit hint to track the expected remaining rows to
 				// be fetched.
@@ -1512,6 +1524,7 @@ func (rf *cFetcher) finalizeBatch() {
 	}
 	rf.machine.batch.SetLength(rf.machine.rowIdx)
 	rf.machine.rowIdx = 0
+	rf.machine.outputBytes = 0
 }
 
 // getCurrentColumnFamilyID returns the column family id of the key in
