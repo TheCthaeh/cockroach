@@ -734,7 +734,7 @@ func (opc *optPlanningCtx) makeQueryIndexRecommendation(ctx context.Context) err
 		savedMemo.RootProps(),
 		f.CopyWithoutAssigningPlaceholders,
 	)
-	opc.optimizer.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	opc.optimizer.NotifyOnMatchedRule(func(ruleName opt.RuleName, _ bool) bool {
 		return ruleName.IsNormalize()
 	})
 	if _, err := opc.optimizer.Optimize(); err != nil {

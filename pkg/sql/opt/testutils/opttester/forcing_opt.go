@@ -71,18 +71,20 @@ func newForcingOptimizer(
 	fo.coster.Init(&fo.o, &fo.groups)
 	fo.o.SetCoster(&fo.coster)
 
-	fo.o.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	fo.o.NotifyOnMatchedRule(func(ruleName opt.RuleName, isRuleMatch bool) bool {
 		if ignoreNormRules && ruleName.IsNormalize() {
 			return true
-		}
-		if fo.remaining == 0 {
-			return false
 		}
 		if tester.Flags.DisableRules.Contains(int(ruleName)) {
 			return false
 		}
-		fo.remaining--
-		fo.lastMatched = ruleName
+		if isRuleMatch {
+			if fo.remaining == 0 {
+				return false
+			}
+			fo.remaining--
+			fo.lastMatched = ruleName
+		}
 		return true
 	})
 

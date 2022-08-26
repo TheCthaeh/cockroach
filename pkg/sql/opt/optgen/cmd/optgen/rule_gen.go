@@ -708,7 +708,10 @@ func (g *newRuleGen) genMatchLet(let *lang.LetExpr, noMatch bool) {
 // rules. Normalization rules recursively call other factory methods in order to
 // construct results.
 func (g *newRuleGen) genNormalizeReplace(define *lang.DefineExpr, rule *lang.RuleExpr) {
-	g.w.nestIndent("if _f.matchedRule == nil || _f.matchedRule(opt.%s) {\n", rule.Name)
+	g.w.nestIndent(
+		"if _f.matchedRule == nil || _f.matchedRule(opt.%s, true /* isRuleMatch */) {\n",
+		rule.Name,
+	)
 
 	g.genBoundStatements(rule.Replace)
 	g.w.writeIndent("_expr := ")
@@ -733,7 +736,10 @@ func (g *newRuleGen) genNormalizeReplace(define *lang.DefineExpr, rule *lang.Rul
 // stack and passes it to the corresponding AddXXXToGroup method, which adds the
 // expression to an existing memo group.
 func (g *newRuleGen) genExploreReplace(define *lang.DefineExpr, rule *lang.RuleExpr) {
-	g.w.nestIndent("if _e.o.matchedRule == nil || _e.o.matchedRule(opt.%s) {\n", rule.Name)
+	g.w.nestIndent(
+		"if _e.o.matchedRule == nil || _e.o.matchedRule(opt.%s, true /* isRuleMatch */) {\n",
+		rule.Name,
+	)
 
 	switch t := rule.Replace.(type) {
 	case *lang.FuncExpr:

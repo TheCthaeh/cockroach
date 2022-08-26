@@ -838,10 +838,10 @@ func fillInLazyProps(e opt.Expr) {
 		rel = rel.FirstExpr()
 
 		// Derive columns that are candidates for pruning.
-		norm.DerivePruneCols(rel)
+		norm.DerivePruneCols(rel, nil /* ruleDisabledFunc */)
 
 		// Derive columns that are candidates for null rejection.
-		norm.DeriveRejectNullCols(rel)
+		norm.DeriveRejectNullCols(rel, nil /* ruleDisabledFunc */)
 
 		// Make sure the interesting orderings are calculated.
 		ordering.DeriveInterestingOrderings(rel)
@@ -1101,7 +1101,7 @@ func (ot *OptTester) OptBuild() (opt.Expr, error) {
 // optbuilder is the final expression tree.
 func (ot *OptTester) OptNorm() (opt.Expr, error) {
 	o := ot.makeOptimizer()
-	o.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	o.NotifyOnMatchedRule(func(ruleName opt.RuleName, _ bool) bool {
 		if !ruleName.IsNormalize() {
 			return false
 		}
@@ -1129,7 +1129,7 @@ func (ot *OptTester) Optimize() (opt.Expr, error) {
 // The result is the memo expression tree with the lowest estimated cost.
 func (ot *OptTester) OptimizeWithTables(tables map[cat.StableID]cat.Table) (opt.Expr, error) {
 	o := ot.makeOptimizer()
-	o.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	o.NotifyOnMatchedRule(func(ruleName opt.RuleName, _ bool) bool {
 		return !ot.Flags.DisableRules.Contains(int(ruleName))
 	})
 	o.Factory().FoldingControl().AllowStableFolds()
@@ -1143,7 +1143,7 @@ func (ot *OptTester) OptimizeWithTables(tables map[cat.StableID]cat.Table) (opt.
 func (ot *OptTester) AssignPlaceholders(
 	queryArgs []string, normalize, explore bool,
 ) (opt.Expr, error) {
-	maybeDisableRule := func(ruleName opt.RuleName) bool {
+	maybeDisableRule := func(ruleName opt.RuleName, _ bool) bool {
 		if !normalize && ruleName.IsNormalize() {
 			return false
 		}
@@ -1213,7 +1213,7 @@ func (ot *OptTester) AssignPlaceholders(
 // queries with placeholders.
 func (ot *OptTester) PlaceholderFastPath() (_ opt.Expr, ok bool, _ error) {
 	o := ot.makeOptimizer()
-	o.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	o.NotifyOnMatchedRule(func(ruleName opt.RuleName, _ bool) bool {
 		return !ot.Flags.DisableRules.Contains(int(ruleName))
 	})
 
@@ -1228,7 +1228,7 @@ func (ot *OptTester) PlaceholderFastPath() (_ opt.Expr, ok bool, _ error) {
 // by the optimizer.
 func (ot *OptTester) Memo() (string, error) {
 	o := ot.makeOptimizer()
-	o.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	o.NotifyOnMatchedRule(func(ruleName opt.RuleName, _ bool) bool {
 		return !ot.Flags.DisableRules.Contains(int(ruleName))
 	})
 	if _, err := ot.optimizeExpr(o, nil); err != nil {
@@ -1256,7 +1256,7 @@ func (ot *OptTester) ExprNorm() (opt.Expr, error) {
 		f.FoldingControl().AllowStableFolds()
 	}
 
-	f.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	f.NotifyOnMatchedRule(func(ruleName opt.RuleName, _ bool) bool {
 		// exprgen.Build doesn't run optimization, so we don't need to explicitly
 		// disallow exploration rules here.
 		return !ot.Flags.DisableRules.Contains(int(ruleName))
@@ -1279,7 +1279,7 @@ func (ot *OptTester) ExprOpt() (opt.Expr, error) {
 		f.FoldingControl().AllowStableFolds()
 	}
 
-	o.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
+	o.NotifyOnMatchedRule(func(ruleName opt.RuleName, _ bool) bool {
 		return !ot.Flags.DisableRules.Contains(int(ruleName))
 	})
 

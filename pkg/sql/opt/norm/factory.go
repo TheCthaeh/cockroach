@@ -33,10 +33,15 @@ type ReplaceFunc func(e opt.Expr) opt.Expr
 
 // MatchedRuleFunc defines the callback function for the NotifyOnMatchedRule
 // event supported by the optimizer and factory. It is invoked each time an
-// optimization rule (Normalize or Explore) has been matched. The name of the
-// matched rule is passed as a parameter. If the function returns false, then
-// the rule is not applied (i.e. skipped).
-type MatchedRuleFunc func(ruleName opt.RuleName) bool
+// optimization rule (Normalize or Explore) has been matched. It can also be
+// used to check whether a rule is disabled. The name of the matched rule is
+// passed as a parameter. If the function returns false, then the rule is not
+// applied (i.e. skipped).
+//
+// The isRuleMatch argument indicates whether MatchedRuleFunc is being called on
+// an actual rule match, or if it's being used for some other purpose (checking
+// whether the rule is disabled).
+type MatchedRuleFunc func(ruleName opt.RuleName, isRuleMatch bool) bool
 
 // AppliedRuleFunc defines the callback function for the NotifyOnAppliedRule
 // event supported by the optimizer and factory. It is invoked each time an
@@ -165,7 +170,7 @@ func (f *Factory) DetachMemo() *memo.Memo {
 // expression tree becomes the output expression tree (because no transforms
 // are applied).
 func (f *Factory) DisableOptimizations() {
-	f.NotifyOnMatchedRule(func(opt.RuleName) bool { return false })
+	f.NotifyOnMatchedRule(func(opt.RuleName, bool) bool { return false })
 }
 
 // DisableOptimizationsTemporarily disables all transformation rules during the
@@ -358,7 +363,8 @@ func (f *Factory) onConstructRelational(rel memo.RelExpr) memo.RelExpr {
 		// an immutable operator that should not be folded: a Limit on top of an
 		// empty input has to error out if the limit turns out to be negative.
 		if relational.Cardinality.IsZero() && relational.VolatilitySet.IsLeakproof() {
-			if f.matchedRule == nil || f.matchedRule(opt.SimplifyZeroCardinalityGroup) {
+			if f.matchedRule == nil ||
+				f.matchedRule(opt.SimplifyZeroCardinalityGroup, true /* isRuleMatch */) {
 				values := f.funcs.ConstructEmptyValues(relational.OutputCols)
 				if f.appliedRule != nil {
 					f.appliedRule(opt.SimplifyZeroCardinalityGroup, nil, values)

@@ -95,10 +95,6 @@ type Optimizer struct {
 	// It can be set via a call to the NotifyOnAppliedRule method.
 	appliedRule AppliedRuleFunc
 
-	// disabledRules is a set of rules that are not allowed to run, used for
-	// testing.
-	disabledRules RuleSet
-
 	// JoinOrderBuilder adds new join orderings to the memo.
 	jb JoinOrderBuilder
 
@@ -152,7 +148,7 @@ func (o *Optimizer) Init(ctx context.Context, evalCtx *eval.Context, catalog cat
 	o.defaultCoster.Init(evalCtx, o.mem, costPerturbation, o.rng)
 	o.coster = &o.defaultCoster
 	if disableRuleProbability > 0 {
-		o.disableRules(disableRuleProbability)
+		o.disableRulesRandom(disableRuleProbability)
 	}
 }
 
@@ -196,7 +192,7 @@ func (o *Optimizer) JoinOrderBuilder() *JoinOrderBuilder {
 // and explore rules. The unaltered input expression tree becomes the output
 // expression tree (because no transforms are applied).
 func (o *Optimizer) DisableOptimizations() {
-	o.NotifyOnMatchedRule(func(opt.RuleName) bool { return false })
+	o.NotifyOnMatchedRule(func(opt.RuleName, bool) bool { return false })
 }
 
 // NotifyOnMatchedRule sets a callback function which is invoked each time an
@@ -834,7 +830,7 @@ func (o *Optimizer) optimizeRootWithProps() {
 	// SimplifyRootOrdering removes redundant columns from the root properties,
 	// based on the operator's functional dependencies.
 	if rootProps.Ordering.CanSimplify(&root.Relational().FuncDeps) {
-		if o.matchedRule == nil || o.matchedRule(opt.SimplifyRootOrdering) {
+		if o.matchedRule == nil || o.matchedRule(opt.SimplifyRootOrdering, true /* isRuleMatch */) {
 			simplified := *rootProps
 			simplified.Ordering = rootProps.Ordering.Copy()
 			simplified.Ordering.Simplify(&root.Relational().FuncDeps)
@@ -858,7 +854,7 @@ func (o *Optimizer) optimizeRootWithProps() {
 		))
 	}
 	if o.f.CustomFuncs().CanPruneCols(root, neededCols) {
-		if o.matchedRule == nil || o.matchedRule(opt.PruneRootCols) {
+		if o.matchedRule == nil || o.matchedRule(opt.PruneRootCols, true /* isRuleMatch */) {
 			root = o.f.CustomFuncs().PruneCols(root, neededCols)
 			// We may have pruned a column that appears in the required ordering.
 			rootCols := root.Relational().OutputCols
@@ -968,8 +964,8 @@ func (a *groupStateAlloc) allocate() *groupState {
 	return state
 }
 
-// disableRules disables rules with the given probability for testing.
-func (o *Optimizer) disableRules(probability float64) {
+// disableRulesRandom disables rules with the given probability for testing.
+func (o *Optimizer) disableRulesRandom(probability float64) {
 	essentialRules := util.MakeFastIntSet(
 		// Needed to prevent constraint building from failing.
 		int(opt.NormalizeInConst),
@@ -1007,6 +1003,7 @@ func (o *Optimizer) disableRules(probability float64) {
 		int(opt.EliminateSelect),
 	)
 
+	var disabledRules RuleSet
 	for i := opt.RuleName(1); i < opt.NumRuleNames; i++ {
 		var r float64
 		if o.rng == nil {
@@ -1015,13 +1012,15 @@ func (o *Optimizer) disableRules(probability float64) {
 			r = o.rng.Float64()
 		}
 		if r < probability && !essentialRules.Contains(int(i)) {
-			o.disabledRules.Add(int(i))
+			disabledRules.Add(int(i))
 		}
 	}
 
-	o.NotifyOnMatchedRule(func(ruleName opt.RuleName) bool {
-		if o.disabledRules.Contains(int(ruleName)) {
-			log.Infof(o.evalCtx.Context, "disabled rule matched: %s", ruleName.String())
+	o.NotifyOnMatchedRule(func(ruleName opt.RuleName, isRuleMatch bool) bool {
+		if disabledRules.Contains(int(ruleName)) {
+			if isRuleMatch {
+				log.Infof(o.evalCtx.Context, "disabled rule matched: %s", ruleName.String())
+			}
 			return false
 		}
 		return true
