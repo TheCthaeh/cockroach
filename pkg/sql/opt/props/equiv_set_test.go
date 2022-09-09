@@ -98,8 +98,6 @@ func TestEquivSet_Rand(t *testing.T) {
 					colsUsed.Add(leftCol)
 					colsUsed.Add(rightCol)
 				}
-				var fromFDEquivSet EquivSet
-				fromFDEquivSet.AddFromFDs(&fds)
 				for leftCol, leftOk := colsUsed.Next(0); leftOk; leftCol, leftOk = colsUsed.Next(leftCol + 1) {
 					for rightCol, rightOk := colsUsed.Next(0); rightOk; rightCol, rightOk = colsUsed.Next(rightCol + 1) {
 						if leftCol == rightCol {
@@ -108,8 +106,6 @@ func TestEquivSet_Rand(t *testing.T) {
 						expected := areColsEquivOracle(leftCol, rightCol)
 						actual := equivSet.AreColsEquiv(leftCol, rightCol)
 						require.Equal(t, expected, actual, makeError(expected))
-						actualFromFDs := fromFDEquivSet.AreColsEquiv(leftCol, rightCol)
-						require.Equal(t, expected, actualFromFDs, makeError(expected))
 					}
 				}
 			})

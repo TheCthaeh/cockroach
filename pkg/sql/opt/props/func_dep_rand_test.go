@@ -171,24 +171,6 @@ func (tr testRelation) checkKey(key opt.ColSet, typ keyType) error {
 
 // checkFD verifies that a certain FD holds for the test relation.
 func (tr testRelation) checkFD(dep funcDep) error {
-	if dep.equiv {
-		// An equivalence FD is easy to check row-by-row.
-		for _, r := range tr {
-			c, _ := dep.from.Next(0)
-			val := r.value(c)
-			fail := false
-			dep.to.ForEach(func(col opt.ColumnID) {
-				if r.value(col) != val {
-					fail = true
-				}
-			})
-			if fail {
-				return fmt.Errorf("FD %s doesn't hold on row %s", &dep, r)
-			}
-		}
-		return nil
-	}
-
 	// We split the rows into groups (keyed on the `from` columns), picking the
 	// first row in each group as the "representative" of that group. All other
 	// rows in the group are checked against the representative row.
@@ -214,11 +196,30 @@ func (tr testRelation) checkFD(dep funcDep) error {
 
 // checkFDs verifies that the given FDs hold against the test relation.
 func (tr testRelation) checkFDs(fd *FuncDepSet) error {
-	// Check deps.
+	// Check non-equiv deps.
 	for _, dep := range fd.deps {
 		if err := tr.checkFD(dep); err != nil {
 			return err
 		}
+	}
+
+	// Check equivs.
+	for _, equiv := range fd.equiv.groups {
+		// An equivalence FD is easy to check row-by-row.
+		for _, r := range tr {
+			c, _ := equiv.Next(0)
+			val := r.value(c)
+			fail := false
+			equiv.ForEach(func(col opt.ColumnID) {
+				if r.value(col) != val {
+					fail = true
+				}
+			})
+			if fail {
+				return fmt.Errorf("equiv %s doesn't hold on row %s", equiv, r)
+			}
+		}
+		return nil
 	}
 
 	// Check keys.
@@ -1035,6 +1036,9 @@ func shiftColumns(fd FuncDepSet, delta int) FuncDepSet {
 		d := &res.deps[i]
 		d.from = shiftSet(d.from, delta)
 		d.to = shiftSet(d.to, delta)
+	}
+	for i := range res.equiv.groups {
+		res.equiv.groups[i] = shiftSet(res.equiv.groups[i], delta)
 	}
 	res.key = shiftSet(res.key, delta)
 	return res
