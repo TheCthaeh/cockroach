@@ -2172,7 +2172,7 @@ func (c *cliState) configurePreShellDefaults(
 					fmt.Fprintf(c.iCtx.stderr, "warning: cannot load the command-line history (file corrupted?): %v\n", err)
 					fmt.Fprintf(c.iCtx.stderr, "note: the history file will be cleared upon first entry\n")
 				}
-				c.ins.SetAutoSaveHistory(histFile, true)
+				//c.ins.SetAutoSaveHistory(histFile, true)
 			}
 		}
 	}
