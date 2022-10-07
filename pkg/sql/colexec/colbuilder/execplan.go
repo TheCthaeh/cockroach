@@ -2562,7 +2562,7 @@ func planProjectionExpr(
 	if r, ok := op.(execreleasable.Releasable); ok {
 		*releasables = append(*releasables, r)
 	}
-	typs = appendOneType(typs, outputType)
+	typs = append(typs, outputType) //appendOneType(typs, outputType)
 	return op, resultIdx, typs, err
 }
 
@@ -2580,7 +2580,7 @@ func planLogicalProjectionOp(
 ) (op colexecop.Operator, resultIdx int, typs []*types.T, err error) {
 	// Add a new boolean column that will store the result of the projection.
 	resultIdx = len(columnTypes)
-	typs = appendOneType(columnTypes, types.Bool)
+	typs = append(columnTypes, types.Bool) // appendOneType(columnTypes, types.Bool)
 	var (
 		typedLeft, typedRight             tree.TypedExpr
 		leftProjOpChain, rightProjOpChain colexecop.Operator
