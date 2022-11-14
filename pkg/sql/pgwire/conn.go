@@ -1406,6 +1406,49 @@ func (c *conn) bufferBatch(ctx context.Context, batch coldata.Batch, r *commandR
 	return nil
 }
 
+func getRowNetworkEgress(ctx context.Context, row tree.Datums, typs []*types.T) (egress int64) {
+	// Each row uses 5 bytes for the message type and length.
+	egress = 5
+
+	var conv sessiondatapb.DataConversionConfig
+	buf := newWriteBuffer(nil /* byteCount */)
+	for i := range row {
+		buf.writeTextDatum(ctx, row[i], conv, nil /* sessionLoc */, typs[i])
+		egress += int64(buf.Len())
+		buf.reset()
+	}
+	return egress
+}
+
+func getBatchNetworkEgress(ctx context.Context, batch coldata.Batch) (egress int64) {
+	// Each row uses 5 bytes for the message type and length.
+	egress = 5 * int64(batch.Length())
+
+	var vecs coldata.TypedVecs
+	var conv sessiondatapb.DataConversionConfig
+	buf := newWriteBuffer(nil /* byteCount */)
+	vecs.SetBatch(batch)
+	sel := batch.Selection()
+	for vecIdx := range vecs.Vecs {
+		for i := 0; i < batch.Length(); i++ {
+			rowIdx := i
+			if sel != nil {
+				rowIdx = sel[i]
+			}
+			// Use the default values for the DataConversionConfig and location.
+			buf.writeTextColumnarElement(ctx, &vecs, vecIdx, rowIdx, conv, nil /* sessionLoc */)
+			egress += int64(buf.Len())
+			buf.reset()
+		}
+	}
+	return egress
+}
+
+func init() {
+	sql.GetRowNetworkEgress = getRowNetworkEgress
+	sql.GetBatchNetworkEgress = getBatchNetworkEgress
+}
+
 func (c *conn) bufferReadyForQuery(txnStatus byte) {
 	c.msgBuilder.initMsg(pgwirebase.ServerMsgReady)
 	c.msgBuilder.writeByte(txnStatus)

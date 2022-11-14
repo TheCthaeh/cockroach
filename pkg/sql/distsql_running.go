@@ -1339,6 +1339,16 @@ func (r *DistSQLReceiver) Push(
 	return r.status
 }
 
+// GetRowNetworkEgress returns the number of bytes that would be sent over the
+// network if the given row was returned to the client. The implementation lives
+// in the pgwire package.
+var GetRowNetworkEgress func(ctx context.Context, row tree.Datums, typs []*types.T) int64
+
+// GetBatchNetworkEgress returns the number of bytes that would be sent over the
+// network if the given batch was returned to the client. The implementation
+// lives in the pgwire package.
+var GetBatchNetworkEgress func(ctx context.Context, batch coldata.Batch) int64
+
 // PushBatch is part of the execinfra.BatchReceiver interface.
 func (r *DistSQLReceiver) PushBatch(
 	batch coldata.Batch, meta *execinfrapb.ProducerMetadata,
