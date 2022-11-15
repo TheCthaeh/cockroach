@@ -731,6 +731,13 @@ func (dsp *DistSQLPlanner) Run(
 
 	recv.outputTypes = plan.GetResultTypes()
 	recv.contendedQueryMetric = dsp.distSQLSrv.Metrics.ContendedQueriesCount
+	if dsp.distSQLSrv.TenantCostController != nil && planCtx.planner != nil {
+		if instrumentation := planCtx.planner.curPlan.instrumentation; instrumentation != nil {
+			// Only collect the network egress estimate for a tenant that is running
+			// EXPLAIN ANALYZE, since the overhead is non-negligible.
+			recv.isTenantExplainAnalyze = instrumentation.outputMode != unmodifiedOutput
+		}
+	}
 
 	if len(flows) == 1 {
 		// We ended up planning everything locally, regardless of whether we
@@ -856,6 +863,11 @@ type DistSQLReceiver struct {
 
 	stats *topLevelQueryStats
 
+	// isTenantExplainAnalyze is used to indicate that network egress should be
+	// collected in order to estimate RU consumption for a tenant that is running
+	// a query with EXPLAIN ANALYZE.
+	isTenantExplainAnalyze bool
+
 	expectedRowsRead int64
 	progressAtomic   *uint64
 
@@ -887,6 +899,17 @@ type rowResultWriter interface {
 // DistSQLReceiver when the consumer can operate on columnar batches directly.
 type batchResultWriter interface {
 	AddBatch(context.Context, coldata.Batch) error
+}
+
+// statsResultWriter is used with the DistSQLReceiver when it is necessary to
+// gather query statistics for EXPLAIN ANALYZE.
+type statsResultWriter interface {
+	// GetRowNetworkEgress returns the number of bytes that would be returned to
+	// the client if the given row was returned as a result.
+	GetRowNetworkEgress(ctx context.Context, row tree.Datums) (int64, error)
+	// GetBatchNetworkEgress returns the number of bytes that would be returned to
+	// the client if the given batch was returned as a result.
+	GetBatchNetworkEgress(ctx context.Context, batch coldata.Batch) (int64, error)
 }
 
 // MetadataResultWriter is used to stream metadata rather than row results in a
@@ -1293,6 +1316,16 @@ func (r *DistSQLReceiver) handleCommErr(commErr error) {
 	}
 }
 
+// GetRowNetworkEgress is a hook for pgwire code that is used to estimate the
+// number of bytes that would be sent over the network if the given row was
+// returned to the client.
+var GetRowNetworkEgress func(ctx context.Context, row tree.Datums, typs []*types.T) int64
+
+// GetBatchNetworkEgress is a hook for pgwire code that is used to estimate the
+// number of bytes that would be sent over the network if the given batch was
+// returned to the client.
+var GetBatchNetworkEgress func(ctx context.Context, batch coldata.Batch) int64
+
 // Push is part of the execinfra.RowReceiver interface.
 func (r *DistSQLReceiver) Push(
 	row rowenc.EncDatumRow, meta *execinfrapb.ProducerMetadata,
@@ -1319,6 +1352,32 @@ func (r *DistSQLReceiver) Push(
 		return r.status
 	}
 
+	ensureDecodedRow := func() error {
+		if r.row == nil {
+			r.row = make(tree.Datums, len(row))
+		}
+		for i, encDatum := range row {
+			err := encDatum.EnsureDecoded(r.outputTypes[i], &r.alloc)
+			if err != nil {
+				return err
+			}
+			r.row[i] = encDatum.Datum
+		}
+		return nil
+	}
+
+	if r.isTenantExplainAnalyze {
+		if err := ensureDecodedRow(); err != nil {
+			r.SetError(err)
+			return r.status
+		}
+		if len(r.row) != len(r.outputTypes) {
+			r.SetError(errors.Errorf("expected number of columns and output types to be the same"))
+			return r.status
+		}
+		r.stats.networkEgressEstimate += GetRowNetworkEgress(r.ctx, r.row, r.outputTypes)
+	}
+
 	if r.discardRows {
 		// Discard rows.
 		return r.status
@@ -1331,16 +1390,9 @@ func (r *DistSQLReceiver) Push(
 		log.VEvent(r.ctx, 2, `a row is pushed in "exists" mode, so transition to draining`)
 		r.status = execinfra.DrainRequested
 	} else {
-		if r.row == nil {
-			r.row = make(tree.Datums, len(row))
-		}
-		for i, encDatum := range row {
-			err := encDatum.EnsureDecoded(r.outputTypes[i], &r.alloc)
-			if err != nil {
-				r.SetError(err)
-				return r.status
-			}
-			r.row[i] = encDatum.Datum
+		if err := ensureDecodedRow(); err != nil {
+			r.SetError(err)
+			return r.status
 		}
 	}
 	r.tracing.TraceExecRowsResult(r.ctx, r.row)
@@ -1375,6 +1427,10 @@ func (r *DistSQLReceiver) PushBatch(
 		// row with the row count in it, so just grab that and exit.
 		r.resultWriterMu.row.IncrementRowsAffected(r.ctx, int(batch.ColVec(0).Int64()[0]))
 		return r.status
+	}
+
+	if r.isTenantExplainAnalyze {
+		r.stats.networkEgressEstimate += GetBatchNetworkEgress(r.ctx, batch)
 	}
 
 	if r.discardRows {
