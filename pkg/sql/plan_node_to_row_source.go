@@ -12,16 +12,19 @@ package sql
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/cockroachdb/cockroach/pkg/sql/execinfra"
 	"github.com/cockroachdb/cockroach/pkg/sql/execinfra/execopnode"
 	"github.com/cockroachdb/cockroach/pkg/sql/execinfra/execreleasable"
 	"github.com/cockroachdb/cockroach/pkg/sql/execinfrapb"
+	"github.com/cockroachdb/cockroach/pkg/sql/execstats"
 	"github.com/cockroachdb/cockroach/pkg/sql/rowenc"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
+	"github.com/cockroachdb/cockroach/pkg/util/optional"
 	"github.com/cockroachdb/errors"
 )
 
@@ -155,6 +158,9 @@ func (p *planNodeToRowSource) SetInput(ctx context.Context, input execinfra.RowS
 func (p *planNodeToRowSource) Start(ctx context.Context) {
 	ctx = p.StartInternal(ctx, nodeName(p.node))
 	p.params.ctx = ctx
+	if execstats.ShouldCollectStats(ctx, p.FlowCtx.CollectStats) {
+		p.ExecStatsForTrace = p.execStatsForTrace
+	}
 	// This starts all of the nodes below this node.
 	if err := startExec(p.params, p.node); err != nil {
 		p.MoveToDraining(err)
@@ -241,6 +247,24 @@ func (p *planNodeToRowSource) trailingMetaCallback() []execinfrapb.ProducerMetad
 		}
 	}
 	return meta
+}
+
+// execStatsForTrace implements ProcessorBase.ExecStatsForTrace.
+func (p *planNodeToRowSource) execStatsForTrace() *execinfrapb.ComponentStats {
+	if _, ok := p.node.(mutationPlanNode); !ok {
+		return nil
+	}
+	scanStats := execstats.GetScanStats(p.Ctx, nil /* recording */)
+	if scanStats.ConsumedRU == 0 {
+		return nil
+	}
+	stats := &execinfrapb.ComponentStats{
+		Exec: execinfrapb.ExecStats{
+			ConsumedRU: optional.MakeUint(scanStats.ConsumedRU),
+		},
+	}
+	fmt.Println(stats)
+	return nil
 }
 
 // Release releases this planNodeToRowSource back to the pool.
