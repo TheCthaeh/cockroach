@@ -443,6 +443,13 @@ func (sp *Span) RecordStructured(item Structured) {
 	sp.i.RecordStructured(item)
 }
 
+func (sp *Span) RecordStructuredStats(item StructuredStats) {
+	if sp.detectUseAfterFinish() {
+		return
+	}
+	sp.i.RecordStructuredStats(item)
+}
+
 // SetTag adds a tag to the span. If there is a pre-existing tag set for the
 // key, it is overwritten.
 func (sp *Span) SetTag(key string, value attribute.Value) {
@@ -921,4 +928,12 @@ func SpanMetaFromProto(info tracingpb.TraceInfo) SpanMeta {
 // `Span.RecordStructured`.
 type Structured interface {
 	protoutil.Message
+}
+
+// StructuredStats is similar to Structured, but used for stats payloads that
+// should be aggregated into a single payload, and only need to be recorded in
+// the CRDB-internal trace span.
+type StructuredStats interface {
+	Structured
+	Aggregate(StructuredStats) StructuredStats
 }

@@ -3546,7 +3546,7 @@ func recordIteratorStats(ctx context.Context, iter MVCCIterator) {
 	seeks := stats.ReverseSeekCount[pebble.InterfaceCall] + stats.ForwardSeekCount[pebble.InterfaceCall]
 	internalSteps := stats.ReverseStepCount[pebble.InternalIterCall] + stats.ForwardStepCount[pebble.InternalIterCall]
 	internalSeeks := stats.ReverseSeekCount[pebble.InternalIterCall] + stats.ForwardSeekCount[pebble.InternalIterCall]
-	sp.RecordStructured(&roachpb.ScanStats{
+	sp.RecordStructuredStats(&roachpb.ScanStats{
 		NumInterfaceSeeks:              uint64(seeks),
 		NumInternalSeeks:               uint64(internalSeeks),
 		NumInterfaceSteps:              uint64(steps),

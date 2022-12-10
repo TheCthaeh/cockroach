@@ -24,6 +24,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/tracing/tracingpb"
 	"github.com/cockroachdb/logtags"
 	"github.com/cockroachdb/redact"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -189,6 +190,8 @@ type recordingState struct {
 	// children in its Recording. childrenMetadata therefore provides a bucketed
 	// view of the various operations that are being traced as part of a span.
 	childrenMetadata map[string]tracingpb.OperationMetadata
+
+	statsRecordings map[string]StructuredStats
 }
 
 // makeSizeLimitedBuffer creates a sizeLimitedBuffer.
@@ -995,6 +998,26 @@ func (s *crdbSpan) recordStructured(item Structured) {
 	s.notifyEventListeners(item)
 }
 
+func (s *crdbSpan) recordStructuredStats(item StructuredStats) {
+	if s.recordingType() == tracingpb.RecordingOff {
+		return
+	}
+
+	name := proto.MessageName(item)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.mu.recording.statsRecordings == nil {
+		s.mu.recording.statsRecordings = make(map[string]StructuredStats)
+	}
+	if prev, ok := s.mu.recording.statsRecordings[name]; ok {
+		s.mu.recording.statsRecordings[name] = item.Aggregate(prev)
+	} else {
+		s.mu.recording.statsRecordings[name] = item
+	}
+}
+
 // memorySizable is implemented by log records and structured events for
 // exposing their in-memory size. This size is used to put caps on the payloads
 // accumulated by a span.
@@ -1097,6 +1120,18 @@ func (s *crdbSpan) appendStructuredEventsLocked(
 		event := s.mu.recording.structured.Get(i).(*tracingpb.StructuredRecord)
 		buffer = append(buffer, *event)
 	}
+	for _, statsRecord := range s.mu.recording.statsRecordings {
+		p, err := types.MarshalAny(statsRecord)
+		if err != nil {
+			// An error here is an error from Marshal; these
+			// are unlikely to happen.
+			continue
+		}
+		buffer = append(buffer, tracingpb.StructuredRecord{
+			Time:    s.tracer.now(),
+			Payload: p,
+		})
+	}
 	return buffer
 }
 
@@ -1166,6 +1201,18 @@ func (s *crdbSpan) getRecordingNoChildrenLocked(
 			event := s.mu.recording.structured.Get(i).(*tracingpb.StructuredRecord)
 			rs.AddStructuredRecord(event)
 		}
+	}
+	for _, statsRecord := range s.mu.recording.statsRecordings {
+		p, err := types.MarshalAny(statsRecord)
+		if err != nil {
+			// An error here is an error from Marshal; these
+			// are unlikely to happen.
+			continue
+		}
+		rs.AddStructuredRecord(&tracingpb.StructuredRecord{
+			Time:    s.tracer.now(),
+			Payload: p,
+		})
 	}
 
 	if wantTags {

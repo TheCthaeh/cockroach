@@ -13,12 +13,14 @@ package roachpb
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	_ "github.com/cockroachdb/cockroach/pkg/kv/kvnemesis/kvnemesisutil" // see RequestHeader
 	"github.com/cockroachdb/cockroach/pkg/kv/kvserver/concurrency/lock"
 	"github.com/cockroachdb/cockroach/pkg/util/hlc"
 	"github.com/cockroachdb/cockroach/pkg/util/humanizeutil"
 	"github.com/cockroachdb/cockroach/pkg/util/protoutil"
+	"github.com/cockroachdb/cockroach/pkg/util/tracing"
 	"github.com/cockroachdb/cockroach/pkg/util/uuid"
 	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/redact"
@@ -1794,6 +1796,25 @@ func (s *ScanStats) SafeFormat(w redact.SafePrinter, _ rune) {
 // String implements fmt.Stringer.
 func (s *ScanStats) String() string {
 	return redact.StringWithoutMarkers(s)
+}
+
+func (s *ScanStats) Aggregate(other tracing.StructuredStats) tracing.StructuredStats {
+	if o, ok := other.(*ScanStats); ok {
+		*s = ScanStats{
+			NumInterfaceSeeks:              s.NumInterfaceSeeks + o.NumInterfaceSeeks,
+			NumInternalSeeks:               s.NumInternalSeeks + o.NumInternalSeeks,
+			NumInterfaceSteps:              s.NumInterfaceSteps + o.NumInterfaceSteps,
+			NumInternalSteps:               s.NumInternalSteps + o.NumInternalSteps,
+			BlockBytes:                     s.BlockBytes + o.BlockBytes,
+			BlockBytesInCache:              s.BlockBytesInCache + o.BlockBytesInCache,
+			KeyBytes:                       s.KeyBytes + o.KeyBytes,
+			ValueBytes:                     s.ValueBytes + o.ValueBytes,
+			PointCount:                     s.PointCount + o.PointCount,
+			PointsCoveredByRangeTombstones: s.PointsCoveredByRangeTombstones + o.PointsCoveredByRangeTombstones,
+		}
+		return s
+	}
+	panic(errors.AssertionFailedf("expected ScanStats in call to ScanStats.Aggregate, got: %v", reflect.TypeOf(other)))
 }
 
 // TenantSettingsPrecedence identifies the precedence of a set of setting
