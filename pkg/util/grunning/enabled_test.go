@@ -19,6 +19,7 @@
 package grunning_test
 
 import (
+	"math/rand"
 	"runtime"
 	"sync"
 	"testing"
@@ -195,6 +196,20 @@ func TestPingPongHog(t *testing.T) {
 
 	mult := float64(pingern) / float64(pongern)
 	t.Logf("pinger/ponger expected≈1.00x got=%0.2fx", mult)
+}
+
+func TestMonotonicTime(t *testing.T) {
+	doWork := func() {
+		size := rand.Int() % 1000000
+		arr := make([]int, size)
+		for i := 0; i < size; i++ {
+			size[i] = i
+		}
+	}
+
+	startTime := grunning.Time()
+	doWork()
+	endTime := grunning.Time()
 }
 
 // BenchmarkGRunningTime measures how costly it is to read the current
