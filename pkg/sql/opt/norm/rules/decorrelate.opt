@@ -179,6 +179,33 @@
     $on
 )
 
+[TryDecorrelateLeftJoinProject, Normalize]
+(LeftJoin | LeftJoinApply
+    $left:*
+    $right:* &
+        (HasOuterCols $right) &
+        (Project $input:* $projections:* $passthrough:*)
+    $on:*
+    $private:*
+)
+=>
+(Select
+    (Project
+        ((OpName)
+            $left
+            $newInput:(EnsureNonNullCol $input)
+            []
+            $private
+        )
+        (MakeNullifiedProjections
+            $projections
+            (NonNullCol $newInput)
+        )
+        (UnionCols (OutputCols $left) $passthrough)
+    )
+    $on
+)
+
 # TryDecorrelateProjectSelect tries to decorrelate by hoisting a Select operator
 # that sits below a LeftJoin/Project operator combo. The Project operator itself
 # can't be reordered above the LeftJoin like it can in the InnerJoin case.

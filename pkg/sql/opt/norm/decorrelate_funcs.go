@@ -14,6 +14,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/opt"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/memo"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/props"
+	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"github.com/cockroachdb/errors"
 	"github.com/cockroachdb/redact"
@@ -477,6 +478,46 @@ func (c *CustomFuncs) AppendAggCols2(
 	c.makeAggCols(aggOp2, cols2, outAggs[offset:])
 
 	return outAggs
+}
+
+func (c *CustomFuncs) EnsureNonNullCol(in memo.RelExpr) memo.RelExpr {
+	if in.Relational().NotNullCols.Empty() {
+		nonNullColID := c.mem.Metadata().AddColumn("non_null", types.Bool)
+		nonNullProjection := memo.ProjectionsExpr{
+			c.f.ConstructProjectionsItem(memo.TrueSingleton, nonNullColID),
+		}
+		return c.f.ConstructProject(in, nonNullProjection, in.Relational().OutputCols)
+	}
+	return in
+}
+
+func (c *CustomFuncs) NonNullCol(in memo.RelExpr) opt.ColumnID {
+	col, ok := in.Relational().NotNullCols.Next(0)
+	if !ok {
+		panic(errors.AssertionFailedf("failed to retrieve non-null column"))
+	}
+	return col
+}
+
+func (c *CustomFuncs) MakeNullifiedProjections(
+	projections memo.ProjectionsExpr, notNullCol opt.ColumnID,
+) memo.ProjectionsExpr {
+	newProjections := make(memo.ProjectionsExpr, len(projections))
+	for i := range projections {
+		newProjections[i] = c.f.ConstructProjectionsItem(c.f.ConstructCase(
+			memo.TrueSingleton,
+			memo.ScalarListExpr{
+				c.f.ConstructWhen(
+					c.f.ConstructIs(c.f.ConstructVariable(notNullCol), memo.NullSingleton),
+					c.f.ConstructConstVal(tree.DNull, projections[i].Element.DataType()),
+				),
+			},
+			projections[i].Element,
+		),
+			projections[i].Col,
+		)
+	}
+	return newProjections
 }
 
 // EnsureCanaryCol checks whether an aggregation which cannot ignore nulls exists.
