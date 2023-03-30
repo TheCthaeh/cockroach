@@ -23,7 +23,6 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/props/physical"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/eval"
 	"github.com/cockroachdb/cockroach/pkg/util/cancelchecker"
-	"github.com/cockroachdb/cockroach/pkg/util/errorutil"
 	"github.com/cockroachdb/cockroach/pkg/util/intsets"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
@@ -236,57 +235,45 @@ func (o *Optimizer) Memo() *memo.Memo {
 // properties at the lowest possible execution cost, but is still logically
 // equivalent to the given expression. If there is a cost "tie", then any one
 // of the qualifying lowest cost expressions may be selected by the optimizer.
-func (o *Optimizer) Optimize() (_ opt.Expr, err error) {
+func (o *Optimizer) Optimize() (expr opt.Expr, err error) {
 	log.VEventf(o.ctx, 1, "optimize start")
 	defer log.VEventf(o.ctx, 1, "optimize finish")
-	defer func() {
-		if r := recover(); r != nil {
-			// This code allows us to propagate internal errors without having to add
-			// error checks everywhere throughout the code. This is only possible
-			// because the code does not update shared state and does not manipulate
-			// locks.
-			if ok, e := errorutil.ShouldCatch(r); ok {
-				err = e
-				log.VEventf(o.ctx, 1, "%v", err)
-			} else {
-				// Other panic objects can't be considered "safe" and thus are
-				// propagated as crashes that terminate the session.
-				panic(r)
-			}
+
+	err = opt.CatchOptimizerRuntimeError(o.ctx, func() error {
+		if o.mem.IsOptimized() {
+			return errors.AssertionFailedf("cannot optimize a memo multiple times")
 		}
-	}()
 
-	if o.mem.IsOptimized() {
-		return nil, errors.AssertionFailedf("cannot optimize a memo multiple times")
-	}
+		// Optimize the root expression according to the properties required of it.
+		o.optimizeRootWithProps()
 
-	// Optimize the root expression according to the properties required of it.
-	o.optimizeRootWithProps()
+		// Now optimize the entire expression tree.
+		root := o.mem.RootExpr().(memo.RelExpr)
+		rootProps := o.mem.RootProps()
+		o.optimizeGroup(root, rootProps)
 
-	// Now optimize the entire expression tree.
-	root := o.mem.RootExpr().(memo.RelExpr)
-	rootProps := o.mem.RootProps()
-	o.optimizeGroup(root, rootProps)
+		// Walk the tree from the root, updating child pointers so that the memo
+		// root points to the lowest cost tree by default (rather than the normalized
+		// tree by default.
+		root = o.setLowestCostTree(root, rootProps).(memo.RelExpr)
+		o.mem.SetRoot(root, rootProps)
 
-	// Walk the tree from the root, updating child pointers so that the memo
-	// root points to the lowest cost tree by default (rather than the normalized
-	// tree by default.
-	root = o.setLowestCostTree(root, rootProps).(memo.RelExpr)
-	o.mem.SetRoot(root, rootProps)
+		// Validate there are no dangling references.
+		if !root.Relational().OuterCols.Empty() {
+			return errors.AssertionFailedf(
+				"top-level relational expression cannot have outer columns: %s",
+				errors.Safe(root.Relational().OuterCols),
+			)
+		}
 
-	// Validate there are no dangling references.
-	if !root.Relational().OuterCols.Empty() {
-		return nil, errors.AssertionFailedf(
-			"top-level relational expression cannot have outer columns: %s",
-			errors.Safe(root.Relational().OuterCols),
-		)
-	}
+		// Validate that the factory's stack depth is zero after all optimizations
+		// have been applied.
+		o.f.CheckConstructorStackDepth()
 
-	// Validate that the factory's stack depth is zero after all optimizations
-	// have been applied.
-	o.f.CheckConstructorStackDepth()
-
-	return root, nil
+		expr = root
+		return nil
+	})
+	return expr, err
 }
 
 // optimizeExpr calls either optimizeGroup or optimizeScalarExpr depending on
