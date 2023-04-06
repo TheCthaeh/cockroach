@@ -600,6 +600,9 @@ func (f *ExprFmtCtx) formatRelational(e RelExpr, tp treeprinter.Node) {
 		if t.IsSecondJoinInPairedJoiner {
 			tp.Childf("second join in paired joiner")
 		}
+		if !f.HasFlags(ExprFmtHideStats) && t.internalRowCount > 0 {
+			tp.Childf("internal row-count: %f", t.internalRowCount)
+		}
 		f.formatLocking(tp, t.Locking)
 
 	case *InvertedJoinExpr:

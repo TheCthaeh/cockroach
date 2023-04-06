@@ -354,6 +354,12 @@ define LookupJoin {
     # join, treating it as if it were another relational input. This makes the
     # lookup join appear more like other join operators.
     lookupProps RelProps
+
+    # internalRowCount caches the estimated number of rows that will be
+    # processed by the lookup join. If there is no ON condition, it is
+    # equivalent to the number of output rows. This is used for costing
+    # lookup joins.
+    internalRowCount float64
 }
 
 [Private]

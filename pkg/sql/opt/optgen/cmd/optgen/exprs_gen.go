@@ -697,10 +697,10 @@ func (g *exprsGen) genAddToGroupFuncs() {
 		fmt.Fprintf(g.w, "  const size = int64(unsafe.Sizeof(%s{}))\n", opTyp.name)
 		fmt.Fprintf(g.w, "  interned := m.interner.Intern%s(e)\n", define.Name)
 		fmt.Fprintf(g.w, "  if interned == e {\n")
+		fmt.Fprintf(g.w, "    e.setGroup(grp)\n")
 		if g.md.hasUnexportedFields(define) {
 			fmt.Fprintf(g.w, "    e.initUnexportedFields(m)\n")
 		}
-		fmt.Fprintf(g.w, "    e.setGroup(grp)\n")
 		fmt.Fprintf(g.w, "    m.memEstimate += size\n")
 		fmt.Fprintf(g.w, "    m.CheckExpr(e)\n")
 		fmt.Fprintf(g.w, "  } else if interned.group() != grp.group() {\n")

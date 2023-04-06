@@ -617,6 +617,8 @@ func (sj *SemiJoinExpr) initUnexportedFields(mem *Memo) {
 
 func (lj *LookupJoinExpr) initUnexportedFields(mem *Memo) {
 	// lookupProps are initialized as necessary by the logical props builder.
+	rows, _ := mem.RowsProcessed(lj)
+	lj.internalRowCount = rows
 }
 
 func (gj *InvertedJoinExpr) initUnexportedFields(mem *Memo) {

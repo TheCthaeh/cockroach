@@ -210,6 +210,7 @@ func newMetadata(compiled *lang.CompiledExpr, pkg string) *metadata {
 		"ShowTraceType":        {fullName: "tree.ShowTraceType", passByVal: true},
 		"ShowCompletions":      {fullName: "tree.ShowCompletions", isPointer: true, usePointerIntern: true},
 		"bool":                 {fullName: "bool", passByVal: true},
+    "float64":              {fullName: "float64", passByVal: true},
 		"int":                  {fullName: "int", passByVal: true},
 		"int64":                {fullName: "int64", passByVal: true},
 		"string":               {fullName: "string", passByVal: true},
