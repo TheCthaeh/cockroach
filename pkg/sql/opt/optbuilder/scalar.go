@@ -721,6 +721,7 @@ func (b *Builder) buildUDF(
 	// Build an expression for each statement in the function body.
 	var body []memo.RelExpr
 	var bodyProps []*physical.Required
+	var exceptions *memo.ExceptionBlock
 	switch o.Language {
 	case tree.FunctionLangSQL:
 		// Parse the function body.
@@ -750,9 +751,10 @@ func (b *Builder) buildUDF(
 		if err != nil {
 			panic(err)
 		}
+		var stmtScope *scope
 		var plBuilder plpgsqlBuilder
 		plBuilder.init(b, colRefs, o.Types.(tree.ParamTypes), stmt.AST, rtyp)
-		stmtScope := plBuilder.build(stmt.AST, bodyScope)
+		stmtScope, exceptions = plBuilder.build(stmt.AST, bodyScope)
 		b.finishBuildLastStmt(stmtScope, bodyScope, isSetReturning, f)
 		body = []memo.RelExpr{stmtScope.expr}
 		bodyProps = []*physical.Required{stmtScope.makePhysicalProps()}
@@ -763,9 +765,10 @@ func (b *Builder) buildUDF(
 	b.insideUDF = false
 
 	udfDef := &memo.UDFDefinition{
-		Body:      body,
-		BodyProps: bodyProps,
-		Params:    params,
+		Body:       body,
+		BodyProps:  bodyProps,
+		Params:     params,
+		Exceptions: exceptions,
 	}
 
 	out = b.factory.ConstructUDFCall(

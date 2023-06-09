@@ -15,6 +15,8 @@ import (
 	"strconv"
 
 	"github.com/cockroachdb/cockroach/pkg/kv"
+	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgcode"
+	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgerror"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/eval"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
@@ -186,12 +188,54 @@ func (g *routineGenerator) Start(ctx context.Context, txn *kv.Txn) (err error) {
 
 		return nil
 	})
+	err = g.maybeHandleException(ctx, err)
 	if err != nil {
 		return err
 	}
 
 	g.rci = newRowContainerIterator(ctx, g.rch)
 	return nil
+}
+
+// handledException is used to signal that an error should be ignored for
+// exception-handling purposes because it's already passed through all relevant
+// catch blocks.
+// TODO(drewk): PL/pgSQL routines are always tail calls. If we guarantee that
+// tail call elimination, there's no need to "protect" the error while unwinding
+// the stack, because there will be no stack.
+type handledException struct {
+	error
+}
+
+var _ error = &handledException{}
+
+func (g *routineGenerator) maybeHandleException(ctx context.Context, err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.HasType(err, (*handledException)(nil)) {
+		// This error has already been through maybeHandleException in a previous
+		// routine.
+		return err
+	}
+	caughtCode := pgerror.GetPGCode(err)
+	if caughtCode == pgcode.Uncategorized {
+		return err
+	}
+	for handler := g.expr.Handler; handler != nil; handler = handler.Parent {
+		for i, code := range handler.Codes {
+			if code == caughtCode.String() {
+				g.Close(ctx)
+				g.init(g.p, handler.Actions[i], g.args)
+				err = g.Start(ctx, g.p.Txn())
+				break
+			}
+		}
+		if err == nil {
+			return nil
+		}
+	}
+	return &handledException{err}
 }
 
 // Next is part of the ValueGenerator interface.

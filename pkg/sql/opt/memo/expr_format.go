@@ -951,6 +951,9 @@ func (f *ExprFmtCtx) formatScalarWithLabel(
 			} else {
 				tp.Child("recursive-call")
 			}
+			if udf.Def.Exceptions != nil {
+				tp.Child("has-exception-block")
+			}
 		}
 	}
 

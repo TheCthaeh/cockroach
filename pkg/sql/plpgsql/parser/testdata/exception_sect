@@ -7,7 +7,13 @@ EXCEPTION
       ASSERT 0 == 0, 'error message';
 END;
 ----
-expected parse error: at or near "exception": syntax error: unimplemented: this syntax
+DECLARE
+BEGIN
+x := 1;
+EXCEPTION
+WHEN division_by_zero THEN
+ASSERT
+END
 
 
 
@@ -20,4 +26,10 @@ EXCEPTION
     x = 22012;
 END;
 ----
-expected parse error: at or near "exception": syntax error: unimplemented: this syntax
+DECLARE
+BEGIN
+x := 10;
+EXCEPTION
+WHEN SQLSTATE '22012' THEN
+x := 22012;
+END

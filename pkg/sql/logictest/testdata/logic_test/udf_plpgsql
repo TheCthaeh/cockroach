@@ -183,7 +183,7 @@ SELECT f(5, -5), f(10, 10);
 query IIIII
 SELECT f(0, 5), f(1, 5), f(1, 6), f(-5, 5), f(-5, 0);
 ----
-1  1  1  -14  -15
+8  8  13  -7  -15
 
 statement ok
 CREATE OR REPLACE FUNCTION f(a INT, b INT) RETURNS INT AS $$
@@ -366,3 +366,39 @@ Vertex  Distance From Source
 6       9
 7       8
 8       14
+
+# Exception Handling
+statement ok
+CREATE OR REPLACE FUNCTION f(a INT) RETURNS INT AS $$
+  DECLARE
+    i INT;
+  BEGIN
+    i := (1/a)::INT;
+    RETURN 0;
+  EXCEPTION
+    WHEN SQLSTATE '22012' THEN RETURN 1;
+  END
+$$ LANGUAGE PLpgSQL;
+
+query II
+SELECT f(0), f(1);
+----
+1 0
+
+statement ok
+CREATE OR REPLACE FUNCTION f(a INT) RETURNS INT AS $$
+  DECLARE
+    i INT;
+  BEGIN
+    i := 100;
+    i := (1/a)::INT;
+    RETURN 0;
+  EXCEPTION
+    WHEN SQLSTATE '22012' THEN RETURN i;
+  END
+$$ LANGUAGE PLpgSQL;
+
+query II
+SELECT f(0), f(1);
+----
+100 0

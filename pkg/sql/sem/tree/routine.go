@@ -111,6 +111,14 @@ type RoutineExpr struct {
 
 	// Generator is true if the function may output a set of rows.
 	Generator bool
+
+	Handler *ExceptionHandler
+}
+
+type ExceptionHandler struct {
+	Codes   []string
+	Actions []*RoutineExpr
+	Parent  *ExceptionHandler
 }
 
 // NewTypedRoutineExpr returns a new RoutineExpr that is well-typed.
@@ -123,6 +131,7 @@ func NewTypedRoutineExpr(
 	calledOnNullInput bool,
 	multiColOutput bool,
 	generator bool,
+  exceptionHandler *ExceptionHandler,
 ) *RoutineExpr {
 	return &RoutineExpr{
 		Args:              args,
@@ -133,6 +142,7 @@ func NewTypedRoutineExpr(
 		CalledOnNullInput: calledOnNullInput,
 		MultiColOutput:    multiColOutput,
 		Generator:         generator,
+    Handler: exceptionHandler,
 	}
 }
 

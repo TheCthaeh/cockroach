@@ -20,6 +20,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgerror"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/plpgsqltree"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
+	"github.com/cockroachdb/cockroach/pkg/sql/sem/volatility"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"github.com/cockroachdb/cockroach/pkg/util/errorutil/unimplemented"
 	"github.com/cockroachdb/errors"
@@ -55,6 +56,8 @@ type plpgsqlBuilder struct {
 	// EXIT statement within a loop. It is used to resume execution with the
 	// statements that follow the loop.
 	exitContinuations []memo.UDFCallPrivate
+
+	exceptions *memo.ExceptionBlock
 
 	identCounter int
 }
@@ -102,19 +105,55 @@ func (b *plpgsqlBuilder) init(
 
 // build constructs an expression that returns the result of executing a
 // PL/pgSQL function. See buildPLpgSQLStatements for more details.
-func (b *plpgsqlBuilder) build(block *plpgsqltree.PLpgSQLStmtBlock, s *scope) *scope {
+func (b *plpgsqlBuilder) build(
+	block *plpgsqltree.PLpgSQLStmtBlock, s *scope,
+) (*scope, *memo.ExceptionBlock) {
+	b.buildExceptions(block)
 	b.ensureScopeHasExpr(s)
 
 	// Some variable declarations initialize the variable.
 	for _, dec := range b.decls {
 		if dec.Expr != nil {
+			// TODO(drewk): Figure out whether this needs to start new continuations
+			// when there's an exception block.
 			s = b.addPLpgSQLAssign(s, dec.Var, dec.Expr)
 		} else {
 			// Uninitialized variables are null.
 			s = b.addPLpgSQLAssign(s, dec.Var, &tree.CastExpr{Expr: tree.DNull, Type: dec.Typ})
 		}
 	}
-	return b.buildPLpgSQLStatements(block.Body, s)
+	return b.buildPLpgSQLStatements(block.Body, s), b.exceptions
+}
+
+func (b *plpgsqlBuilder) buildExceptions(block *plpgsqltree.PLpgSQLStmtBlock) {
+	if len(block.Exceptions) == 0 {
+		return
+	}
+	codes := make([]string, 0, len(block.Exceptions))
+	handlers := make([]memo.UDFCallPrivate, 0, len(block.Exceptions))
+	for _, e := range block.Exceptions {
+		// TODO(drewk): once nested blocks are supported, need to ensure that the
+		// routines built for the exception handlers do not contain the parent
+		// exception handlers.
+		continuation := b.buildContinuation(e.Action, "exception_handler")
+		for _, cond := range e.Conditions {
+			if cond.SqlErrState == "" {
+				panic(unimplemented.New(
+					"named exceptions",
+					"matching exceptions by name is not yet supported",
+				))
+			}
+			codes = append(codes, cond.SqlErrState)
+			handlers = append(handlers, continuation)
+		}
+	}
+	// Set the previous exceptions as the parent, since if the current block
+	// returns an error it can still be caught by an ancestor block.
+	b.exceptions = &memo.ExceptionBlock{
+		Codes:   codes,
+		Actions: handlers,
+		Parent:  b.exceptions,
+	}
 }
 
 // buildPLpgSQLStatements performs the majority of the work building a PL/pgSQL
@@ -141,6 +180,15 @@ func (b *plpgsqlBuilder) buildPLpgSQLStatements(
 			// Assignment (:=) is handled by projecting a new column with the same
 			// name as the variable being assigned.
 			s = b.addPLpgSQLAssign(s, t.Var, t.Value)
+			if b.exceptions != nil {
+				// If exception handling is required, we have to start a new
+				// continuation after each variable assignment. This ensures that in the
+				// event of an error, the parameters of the currently executing routine
+				// will be the correct values for the variables, and can be passed to
+				// the exception handler routines.
+				continuation := b.buildContinuation(stmts[i+1:], "assign_with_catch")
+				return b.callContinuation(&continuation, s)
+			}
 		case *plpgsqltree.PLpgSQLStmtIf:
 			if len(t.ElseIfList) != 0 {
 				panic(unimplemented.New(
@@ -316,12 +364,16 @@ func (b *plpgsqlBuilder) buildContinuation(
 // makeContinuation allocates a new continuation function with an uninitialized
 // definition.
 func (b *plpgsqlBuilder) makeContinuation(name string) memo.UDFCallPrivate {
-	return memo.UDFCallPrivate{
+	continuation := memo.UDFCallPrivate{
 		Name:              b.makeIdentifier(name),
 		Def:               &memo.UDFDefinition{},
 		Typ:               b.returnType,
 		CalledOnNullInput: true,
 	}
+	if b.exceptions != nil {
+		continuation.Volatility = volatility.Volatile
+	}
+	return continuation
 }
 
 // finishContinuation initializes the definition of a continuation function with
@@ -353,6 +405,7 @@ func (b *plpgsqlBuilder) finishContinuation(
 		BodyProps:   []*physical.Required{continuationScope.makePhysicalProps()},
 		Params:      params,
 		IsRecursive: recursive,
+		Exceptions:  b.exceptions,
 	}
 }
 

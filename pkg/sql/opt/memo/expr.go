@@ -684,6 +684,14 @@ type UDFDefinition struct {
 	// IsRecursive indicates whether the UDF recursively calls itself even if it
 	// is mutually recursive with another UDF.
 	IsRecursive bool
+
+	Exceptions *ExceptionBlock
+}
+
+type ExceptionBlock struct {
+	Codes   []string
+	Actions []UDFCallPrivate
+	Parent  *ExceptionBlock
 }
 
 // WindowFrame denotes the definition of a window frame for an individual

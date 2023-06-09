@@ -700,6 +700,7 @@ func (b *Builder) buildExistsSubquery(
 				true,  /* calledOnNullInput */
 				false, /* multiColOutput */
 				false, /* generator */
+				nil,   /* exceptionHandler */
 			),
 			tree.DBoolFalse,
 		}, types.Bool), nil
@@ -815,6 +816,7 @@ func (b *Builder) buildSubquery(
 			true,  /* calledOnNullInput */
 			false, /* multiColOutput */
 			false, /* generator */
+			nil,   /* exceptionHandler */
 		), nil
 	}
 
@@ -869,6 +871,7 @@ func (b *Builder) buildSubquery(
 			true,  /* calledOnNullInput */
 			false, /* multiColOutput */
 			false, /* generator */
+			nil,   /* exceptionHandler */
 		), nil
 	}
 
@@ -955,6 +958,36 @@ func (b *Builder) buildUDF(ctx *buildScalarCtx, scalar opt.ScalarExpr) (tree.Typ
 	// statements.
 	enableStepping := udf.Volatility == volatility.Volatile
 
+  // Build an exception handler for the routine.
+	var buildHandler func(block *memo.ExceptionBlock) (*tree.ExceptionHandler, error)
+	buildHandler = func(exceptions *memo.ExceptionBlock) (*tree.ExceptionHandler, error) {
+		if exceptions == nil {
+			return nil, nil
+		}
+		parent, err := buildHandler(exceptions.Parent)
+		if err != nil {
+			return nil, err
+		}
+		handler := &tree.ExceptionHandler{
+			Codes:   make([]string, len(exceptions.Codes)),
+			Actions: make([]*tree.RoutineExpr, len(exceptions.Actions)),
+			Parent:  parent,
+		}
+		copy(handler.Codes, exceptions.Codes)
+		for i, action := range exceptions.Actions {
+			expr, err := b.buildUDF(ctx, &memo.UDFCallExpr{UDFCallPrivate: action})
+			if err != nil {
+				return nil, err
+			}
+			handler.Actions[i] = expr.(*tree.RoutineExpr)
+		}
+		return handler, nil
+	}
+  handler, err := buildHandler(udf.Def.Exceptions)
+  if err != nil {
+    return nil, err
+  }
+
 	return tree.NewTypedRoutineExpr(
 		udf.Name,
 		args,
@@ -964,6 +997,7 @@ func (b *Builder) buildUDF(ctx *buildScalarCtx, scalar opt.ScalarExpr) (tree.Typ
 		udf.CalledOnNullInput,
 		udf.MultiColDataSource,
 		udf.SetReturning,
+		handler,
 	), nil
 }
 
