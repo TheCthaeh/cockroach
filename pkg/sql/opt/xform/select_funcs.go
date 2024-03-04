@@ -11,6 +11,7 @@
 package xform
 
 import (
+	"math"
 	"sort"
 
 	"github.com/cockroachdb/cockroach/pkg/sql/inverted"
@@ -931,6 +932,30 @@ func (c *CustomFuncs) GenerateInvertedIndexScans(
 		// Add an inverted filter if needed.
 		if needInvertedFilter {
 			sb.AddInvertedFilter(spanExpr, pfState, invertedCol)
+			invertedOrd := index.InvertedColumn().InvertedSourceColumnOrdinal()
+			tab := c.e.mem.Metadata().Table(scanPrivate.Table)
+			trigramCount := len(spanExpr.SpansToRead)
+			threshold := int(math.Floor(float64(trigramCount) * c.e.evalCtx.SessionData().TrigramSimilarityThreshold))
+			if threshold > 1 && tab.Column(invertedOrd).DatumType().Family() == types.StringFamily {
+				sb.addCustomFilter(func(input memo.RelExpr) memo.RelExpr {
+					countCol := c.e.mem.Metadata().AddColumn("_inverted_count", types.Int)
+					input = c.e.f.ConstructGroupBy(
+						input,
+						memo.AggregationsExpr{
+							c.e.f.ConstructAggregationsItem(c.e.f.ConstructCountRows(), countCol),
+						},
+						&memo.GroupingPrivate{GroupingCols: pkCols},
+					)
+					return c.e.f.ConstructSelect(input, memo.FiltersExpr{
+						c.e.f.ConstructFiltersItem(
+							c.e.f.ConstructGe(
+								c.e.f.ConstructVariable(countCol),
+								c.e.f.ConstructConstVal(tree.NewDInt(tree.DInt(threshold)), types.Int),
+							),
+						),
+					})
+				})
+			}
 		}
 
 		// If remaining filter exists, split it into one part that can be pushed

@@ -47,6 +47,7 @@ type indexScanBuilder struct {
 	outerFilters          memo.FiltersExpr
 	invertedFilterPrivate memo.InvertedFilterPrivate
 	indexJoinPrivate      memo.IndexJoinPrivate
+	customFilter          func(expr memo.RelExpr) memo.RelExpr
 }
 
 // Init initializes an indexScanBuilder.
@@ -108,6 +109,13 @@ func (b *indexScanBuilder) AddInvertedFilter(
 			InvertedColumn:     invertedCol,
 		}
 	}
+}
+
+// addCustomFilter adds a custom filtering step after the inverted filter
+// (if any). It is currently only used for trigram indexes with the similarity
+// operator (%).
+func (b *indexScanBuilder) addCustomFilter(fn func(input memo.RelExpr) memo.RelExpr) {
+	b.customFilter = fn
 }
 
 // AddSelect wraps the input expression with a Select expression having the
@@ -237,7 +245,7 @@ func (b *indexScanBuilder) BuildNewExpr() (output memo.RelExpr) {
 // expressions that were specified by previous calls to various add methods.
 func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 	// 1. Only scan.
-	if !b.hasConstProjections() && !b.hasInnerFilters() && !b.hasInvertedFilter() && !b.hasIndexJoin() {
+	if !b.hasConstProjections() && !b.hasInnerFilters() && !b.hasInvertedFilter() && !b.hasCustomFilter() && !b.hasIndexJoin() {
 		scan := &memo.ScanExpr{ScanPrivate: b.scanPrivate}
 		md := b.mem.Metadata()
 		tabMeta := md.TableMeta(scan.Table)
@@ -250,7 +258,7 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 
 	// 2. Wrap input in a Project if constant projections were added.
 	if b.hasConstProjections() {
-		if !b.hasInnerFilters() && !b.hasInvertedFilter() && !b.hasIndexJoin() {
+		if !b.hasInnerFilters() && !b.hasInvertedFilter() && !b.hasCustomFilter() && !b.hasIndexJoin() {
 			b.mem.AddProjectToGroup(&memo.ProjectExpr{
 				Input:       input,
 				Projections: b.constProjections,
@@ -264,7 +272,7 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 
 	// 3. Wrap input in inner filter if it was added.
 	if b.hasInnerFilters() {
-		if !b.hasInvertedFilter() && !b.hasIndexJoin() {
+		if !b.hasInvertedFilter() && !b.hasCustomFilter() && !b.hasIndexJoin() {
 			b.mem.AddSelectToGroup(&memo.SelectExpr{Input: input, Filters: b.innerFilters}, grp)
 			return
 		}
@@ -274,7 +282,7 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 
 	// 4. Wrap input in inverted filter if it was added.
 	if b.hasInvertedFilter() {
-		if !b.hasIndexJoin() {
+		if !b.hasCustomFilter() && !b.hasIndexJoin() {
 			invertedFilter := &memo.InvertedFilterExpr{
 				Input: input, InvertedFilterPrivate: b.invertedFilterPrivate,
 			}
@@ -283,6 +291,11 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 		}
 
 		input = b.f.ConstructInvertedFilter(input, &b.invertedFilterPrivate)
+	}
+
+	if b.hasCustomFilter() {
+		// TODO: consider no index join case.
+		input = b.customFilter(input)
 	}
 
 	// 5. Wrap input in index join if it was added.
@@ -325,6 +338,10 @@ func (b *indexScanBuilder) hasOuterFilters() bool {
 // builder.
 func (b *indexScanBuilder) hasInvertedFilter() bool {
 	return b.invertedFilterPrivate.InvertedColumn != 0
+}
+
+func (b *indexScanBuilder) hasCustomFilter() bool {
+	return b.customFilter != nil
 }
 
 // hasIndexJoin returns true if an index join has been added to the builder.
