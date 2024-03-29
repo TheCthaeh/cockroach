@@ -166,6 +166,13 @@ type plpgsqlBuilder struct {
 	// outParams is the set of OUT parameters for the routine.
 	outParams []ast.Variable
 
+	// outScope is the output scope for the routine. It is only used for
+	// transaction control statements in procedures, which need the presentation
+	// to construct a new procedure that will resume execution. Note that due to
+	// OUT parameters, stored procedures resolve their return type before building
+	// their body statements.
+	outScope *scope
+
 	routineName  string
 	isProcedure  bool
 	identCounter int
@@ -186,6 +193,7 @@ func newPLpgSQLBuilder(
 	routineParams []routineParam,
 	returnType *types.T,
 	isProcedure bool,
+	outScope *scope,
 ) *plpgsqlBuilder {
 	const initialBlocksCap = 2
 	b := &plpgsqlBuilder{
@@ -195,6 +203,7 @@ func newPLpgSQLBuilder(
 		blocks:      make([]plBlock, 0, initialBlocksCap),
 		routineName: routineName,
 		isProcedure: isProcedure,
+		outScope:    outScope,
 	}
 	// Build the initial block for the routine parameters, which are considered
 	// PL/pgSQL variables.
@@ -1701,7 +1710,8 @@ func (b *plpgsqlBuilder) callContinuationWithTxnOp(
 	txnControlExpr := b.ob.factory.ConstructTxnControl(args, &memo.TxnControlPrivate{
 		TxnOp:    txnOp,
 		TxnModes: txnModes,
-		Props:    returnScope.makePhysicalProps(),
+		Props:    b.outScope.makePhysicalProps(),
+		OutCols:  b.outScope.colList(),
 		Def:      con.def,
 	})
 	returnColName := scopeColName("").WithMetadataName(con.def.Name)

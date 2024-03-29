@@ -1,0 +1,26 @@
+# Properties with no OUT parameters.
+exec-ddl
+CREATE OR REPLACE PROCEDURE p() AS $$
+  BEGIN
+    SELECT 1;
+  END;
+$$ LANGUAGE PLpgSQL;
+----
+
+build
+CALL p();
+----
+
+# Properties with OUT parameters.
+exec-ddl
+CREATE OR REPLACE PROCEDURE p(OUT a INT, OUT b INT) AS $$
+  BEGIN
+    a := 5;
+    SELECT 1;
+  END;
+$$ LANGUAGE PLpgSQL;
+----
+
+build
+CALL p(NULL, NULL);
+----
