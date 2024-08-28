@@ -197,6 +197,9 @@ func (b *Builder) buildRelational(e memo.RelExpr) (_ execPlan, outputCols colOrd
 	case *memo.ScanExpr:
 		ep, outputCols, err = b.buildScan(t)
 
+	case *memo.InterleavedScanExpr:
+		ep, outputCols, err = b.buildInterleavedScan(t)
+
 	case *memo.PlaceholderScanExpr:
 		ep, outputCols, err = b.buildPlaceholderScan(t)
 
@@ -760,6 +763,11 @@ func (b *Builder) buildScan(scan *memo.ScanExpr) (_ execPlan, outputCols colOrdM
 	}
 	b.IndexesUsed = util.CombineUnique(b.IndexesUsed, []string{fmt.Sprintf("%d@%d", tab.ID(), idx.ID())})
 
+	if idx.IsInterleaved() {
+		return execPlan{}, colOrdMap{},
+			errors.AssertionFailedf("cannot perform a scan on an interleaved index")
+	}
+
 	// Save if we planned a full (large) table/index scan on the builder so that
 	// the planner can be made aware later. We only do this for non-virtual
 	// tables.
@@ -868,6 +876,15 @@ func (b *Builder) buildScan(scan *memo.ScanExpr) (_ execPlan, outputCols colOrdM
 		b.builtScans = append(b.builtScans, scan)
 	}
 	return res, outputCols, nil
+}
+
+func (b *Builder) buildInterleavedScan(
+	scan *memo.InterleavedScanExpr,
+) (_ execPlan, outputCols colOrdMap, err error) {
+	md := b.mem.Metadata()
+	tab := md.Table(scan.Table)
+	return execPlan{}, colOrdMap{},
+		fmt.Errorf("could not produce a query plan for interleaved scan of table %s", tab.Name())
 }
 
 func (b *Builder) buildPlaceholderScan(
@@ -2678,6 +2695,10 @@ func (b *Builder) buildLookupJoin(
 	tab := md.Table(join.Table)
 	idx := tab.Index(join.Index)
 	b.IndexesUsed = util.CombineUnique(b.IndexesUsed, []string{fmt.Sprintf("%d@%d", tab.ID(), idx.ID())})
+	if idx.IsInterleaved() {
+		return execPlan{}, colOrdMap{},
+			errors.AssertionFailedf("cannot perform a lookup-join on an interleaved index")
+	}
 
 	locking, err := b.buildLocking(join.Table, join.Locking)
 	if err != nil {
@@ -2858,6 +2879,10 @@ func (b *Builder) buildInvertedJoin(
 	tab := md.Table(join.Table)
 	idx := tab.Index(join.Index)
 	b.IndexesUsed = util.CombineUnique(b.IndexesUsed, []string{fmt.Sprintf("%d@%d", tab.ID(), idx.ID())})
+	if idx.IsInterleaved() {
+		return execPlan{}, colOrdMap{},
+			errors.AssertionFailedf("cannot perform a zigzag-join on an interleaved index")
+	}
 
 	prefixEqCols := make([]exec.NodeColumnOrdinal, len(join.PrefixKeyCols))
 	for i, c := range join.PrefixKeyCols {
@@ -3003,6 +3028,10 @@ func (b *Builder) buildZigzagJoin(
 		[]string{fmt.Sprintf("%d@%d", leftTable.ID(), leftIndex.ID())})
 	b.IndexesUsed = util.CombineUnique(b.IndexesUsed,
 		[]string{fmt.Sprintf("%d@%d", rightTable.ID(), rightIndex.ID())})
+	if leftIndex.IsInterleaved() || rightIndex.IsInterleaved() {
+		return execPlan{}, colOrdMap{},
+			errors.AssertionFailedf("cannot perform a zigzag-join on an interleaved index")
+	}
 
 	leftEqCols := make([]exec.TableColumnOrdinal, len(join.LeftEqCols))
 	rightEqCols := make([]exec.TableColumnOrdinal, len(join.RightEqCols))

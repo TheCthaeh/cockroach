@@ -205,6 +205,55 @@ func (b *logicalPropsBuilder) buildScanProps(scan *ScanExpr, rel *props.Relation
 	}
 }
 
+func (b *logicalPropsBuilder) buildInterleavedScanProps(
+	scan *InterleavedScanExpr, rel *props.Relational,
+) {
+	md := scan.Memo().Metadata()
+
+	// Side Effects
+	// ------------
+	// A Locking option is a side-effect (we don't want to elide this scan).
+	if !scan.Locking.IsNoOp() {
+		rel.VolatilitySet.AddVolatile()
+	}
+
+	// Output Columns
+	// --------------
+	// Scan output columns are stored in the definition.
+	rel.OutputCols = scan.Cols
+
+	// Not Null Columns
+	// ----------------
+	// Initialize not-NULL columns from the table schema.
+	rel.NotNullCols = makeTableNotNullCols(md, scan.Table).Copy()
+
+	// Outer Columns
+	// -------------
+	// Scan operator never has outer columns.
+
+	// Functional Dependencies
+	// -----------------------
+	// Initialize functional dependencies from the table schema.
+	rel.FuncDeps.CopyFrom(MakeTableFuncDep(md, scan.Table))
+	rel.FuncDeps.MakeNotNull(rel.NotNullCols)
+	rel.FuncDeps.ProjectCols(rel.OutputCols)
+
+	// Cardinality
+	// -----------
+	rel.Cardinality = props.AnyCardinality
+	b.updateCardinalityFromTypes(rel.OutputCols, rel)
+	if scan.Locking.WaitPolicy == tree.LockWaitSkipLocked {
+		// SKIP LOCKED can act like a filter. The minimum cardinality of a scan
+		// should never exceed zero based on the logic above, but this provides
+		// extra safety.
+		rel.Cardinality = rel.Cardinality.AsLowAs(0)
+	}
+
+	// Statistics
+	// ----------
+	// TODO(drewk): implement statistics for interleaved tables.
+}
+
 func (b *logicalPropsBuilder) buildPlaceholderScanProps(
 	scan *PlaceholderScanExpr, rel *props.Relational,
 ) {

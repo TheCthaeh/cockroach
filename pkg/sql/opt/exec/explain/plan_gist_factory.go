@@ -509,6 +509,10 @@ func (u *unknownTable) IsMaterializedView() bool {
 	return false
 }
 
+func (u *unknownTable) IsInterleavedTable() bool {
+  return false
+}
+
 func (u *unknownTable) ColumnCount() int {
 	return 0
 }
@@ -657,6 +661,18 @@ func (u *unknownIndex) IsUnique() bool {
 
 func (u *unknownIndex) IsInverted() bool {
 	return false
+}
+
+func (u *unknownIndex) IsInterleaved() bool {
+	return false
+}
+
+func (u *unknownIndex) InterleavedPrefixColumnCount() int {
+  return 0
+}
+
+func (u *unknownIndex) InterleavedColumnOrdinal(i int) int {
+	panic(errors.AssertionFailedf("not implemented"))
 }
 
 func (u *unknownIndex) GetInvisibility() float64 {

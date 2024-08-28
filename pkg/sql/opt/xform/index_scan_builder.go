@@ -42,6 +42,7 @@ type indexScanBuilder struct {
 	mem                   *memo.Memo
 	tabID                 opt.TableID
 	scanPrivate           memo.ScanPrivate
+	scanRemapProjections  memo.ProjectionsExpr
 	constProjections      memo.ProjectionsExpr
 	innerFilters          memo.FiltersExpr
 	outerFilters          memo.FiltersExpr
@@ -71,6 +72,21 @@ func (b *indexScanBuilder) SetScan(scanPrivate *memo.ScanPrivate) {
 		mem:         b.mem,
 		tabID:       b.tabID,
 		scanPrivate: *scanPrivate,
+	}
+}
+
+// AddScanRemapProjections wraps the Scan expression with a Project expression
+// with the given projections that remap the scan columns. Note that the Scan
+// columns are not passed through this Project operator,
+func (b *indexScanBuilder) AddScanRemapProjections(proj memo.ProjectionsExpr) {
+	if len(proj) != 0 {
+		if b.hasScanRemapProjections() {
+			panic(errors.AssertionFailedf("cannot call AddScanRemapProjections twice"))
+		}
+		if b.hasInnerFilters() || b.hasOuterFilters() {
+			panic(errors.AssertionFailedf("cannot call AddScanRemapProjections after filters are added"))
+		}
+		b.scanRemapProjections = proj
 	}
 }
 
@@ -237,7 +253,8 @@ func (b *indexScanBuilder) BuildNewExpr() (output memo.RelExpr) {
 // expressions that were specified by previous calls to various add methods.
 func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 	// 1. Only scan.
-	if !b.hasConstProjections() && !b.hasInnerFilters() && !b.hasInvertedFilter() && !b.hasIndexJoin() {
+	if !b.hasScanRemapProjections() && !b.hasConstProjections() && !b.hasInnerFilters() &&
+		!b.hasInvertedFilter() && !b.hasIndexJoin() {
 		scan := &memo.ScanExpr{ScanPrivate: b.scanPrivate}
 		md := b.mem.Metadata()
 		tabMeta := md.TableMeta(scan.Table)
@@ -248,7 +265,20 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 
 	input := b.f.ConstructScan(&b.scanPrivate)
 
-	// 2. Wrap input in a Project if constant projections were added.
+	// 2. Wrap input in a Project to remap the Scan columns if needed.
+	if b.hasScanRemapProjections() {
+		if !b.hasConstProjections() && !b.hasInnerFilters() && !b.hasInvertedFilter() && !b.hasIndexJoin() {
+			b.mem.AddProjectToGroup(&memo.ProjectExpr{
+				Input:       input,
+				Projections: b.scanRemapProjections,
+			}, grp)
+			return
+		}
+
+		input = b.f.ConstructProject(input, b.scanRemapProjections, opt.ColSet{})
+	}
+
+	// 3. Wrap input in a Project if constant projections were added.
 	if b.hasConstProjections() {
 		if !b.hasInnerFilters() && !b.hasInvertedFilter() && !b.hasIndexJoin() {
 			b.mem.AddProjectToGroup(&memo.ProjectExpr{
@@ -262,7 +292,7 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 		input = b.f.ConstructProject(input, b.constProjections, b.scanPrivate.Cols)
 	}
 
-	// 3. Wrap input in inner filter if it was added.
+	// 4. Wrap input in inner filter if it was added.
 	if b.hasInnerFilters() {
 		if !b.hasInvertedFilter() && !b.hasIndexJoin() {
 			b.mem.AddSelectToGroup(&memo.SelectExpr{Input: input, Filters: b.innerFilters}, grp)
@@ -272,7 +302,7 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 		input = b.f.ConstructSelect(input, b.innerFilters)
 	}
 
-	// 4. Wrap input in inverted filter if it was added.
+	// 5. Wrap input in inverted filter if it was added.
 	if b.hasInvertedFilter() {
 		if !b.hasIndexJoin() {
 			invertedFilter := &memo.InvertedFilterExpr{
@@ -285,7 +315,7 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 		input = b.f.ConstructInvertedFilter(input, &b.invertedFilterPrivate)
 	}
 
-	// 5. Wrap input in index join if it was added.
+	// 6. Wrap input in index join if it was added.
 	if b.hasIndexJoin() {
 		if !b.hasOuterFilters() {
 			indexJoin := &memo.IndexJoinExpr{Input: input, IndexJoinPrivate: b.indexJoinPrivate}
@@ -296,13 +326,19 @@ func (b *indexScanBuilder) Build(grp memo.RelExpr) {
 		input = b.f.ConstructIndexJoin(input, &b.indexJoinPrivate)
 	}
 
-	// 6. Wrap input in outer filter (which must exist at this point).
+	// 7. Wrap input in outer filter (which must exist at this point).
 	if !b.hasOuterFilters() {
 		// indexJoinDef == 0: outerFilters == 0 handled by #1-4 above.
 		// indexJoinDef != 0: outerFilters == 0 handled by #5 above.
 		panic(errors.AssertionFailedf("outer filter cannot be 0 at this point"))
 	}
 	b.mem.AddSelectToGroup(&memo.SelectExpr{Input: input, Filters: b.outerFilters}, grp)
+}
+
+// hasConstProjections returns true if scan column-remapping projections have
+// been added to the builder.
+func (b *indexScanBuilder) hasScanRemapProjections() bool {
+	return len(b.scanRemapProjections) != 0
 }
 
 // hasConstProjections returns true if constant projections have been added to

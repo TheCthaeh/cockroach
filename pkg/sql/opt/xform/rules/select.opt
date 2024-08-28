@@ -73,6 +73,14 @@
     $filters
 )
 
+# GenerateConstrainedInterleavedScans is similar to GenerateConstrainedScans,
+# but handles the mapping from interleaved indexes to the base tables that
+# implement them.
+[GenerateConstrainedInterleavedScans, Explore]
+(Select (InterleavedScan $private:*) $filters:*)
+=>
+(GenerateConstrainedInterleavedScans $private $filters)
+
 # GenerateZigzagJoins creates ZigzagJoin operators for all index pairs (of the
 # Scan table) where the prefix column(s) of both indexes is/are fixed to
 # constant values in the filters. See comments in GenerateZigzagJoin and

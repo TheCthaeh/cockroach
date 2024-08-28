@@ -84,3 +84,11 @@
 )
 =>
 (GenerateLocalityOptimizedScan $scanPrivate)
+
+# GeneratedInterleavedPrimaryIndexScan creates a scan over the primary index of
+# an interleaved table. This rule always fires to ensure that there is at least
+# one valid plan for scanning an interleaved table.
+[GeneratedInterleavedPrimaryIndexScan, Explore]
+(InterleavedScan $private:*)
+=>
+(GeneratedInterleavedPrimaryIndexScan $private)

@@ -107,7 +107,8 @@ func (c *CustomFuncs) GeneratePartialIndexScans(
 	// Iterate over all partial indexes.
 	var pkCols opt.ColSet
 	var iter scanIndexIter
-	iter.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, filters, rejectNonPartialIndexes|rejectInvertedIndexes)
+	reject := rejectNonPartialIndexes | rejectInvertedIndexes | rejectInterleavedIndexes
+	iter.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, filters, reject)
 	iter.ForEach(func(index cat.Index, remainingFilters memo.FiltersExpr, indexCols opt.ColSet, isCovering bool, constProj memo.ProjectionsExpr) {
 		var sb indexScanBuilder
 		sb.Init(c, scanPrivate.Table)
@@ -454,6 +455,23 @@ func (c *CustomFuncs) GenerateConstrainedScans(
 			return
 		}
 
+		if index.IsInterleaved() {
+			if !isCovering {
+				// TODO(drewk): implement non-covering interleaved index scans.
+				return
+			}
+			// An interleaved index key has a prefix of columns that must be
+			// constrained in order to determine the location of the scanned rows
+			// within the base table.
+			requiredPrefix := index.InterleavedPrefixColumnCount()
+			for i := 0; i < combinedConstraint.Spans.Count(); i++ {
+				spanPrefix := combinedConstraint.Spans.Get(i).Prefix(c.e.ctx, c.e.evalCtx)
+				if spanPrefix < requiredPrefix {
+					return
+				}
+			}
+		}
+
 		// Make a best-effort check to avoid generating trivial constrained scans
 		// that actually scan the entire table.
 		//
@@ -488,10 +506,29 @@ func (c *CustomFuncs) GenerateConstrainedScans(
 		// Record whether we were able to use partitions to constrain the scan.
 		newScanPrivate.PartitionConstrainedScan = len(partitionFilters) > 0
 
+		setScan := func() {
+			if index.IsInterleaved() {
+				// Interleaved index scans require special handling. The scan columns
+				// are remapped to reference the base table that stores the index rows,
+				// and then a Project after the Scan maps back to the original columns.
+				// Additionally,
+				var baseTab opt.TableID
+				cols, proj := c.remapInterleavedColumns(scanPrivate.Cols, scanPrivate.Table, baseTab, index)
+				newScanPrivate.Table = baseTab
+				newScanPrivate.Cols = cols
+				newScanPrivate.Constraint = c.remapInterleavedConstraint(
+					scanPrivate.Constraint, scanPrivate.Table, baseTab, index)
+				sb.SetScan(&newScanPrivate)
+				sb.AddScanRemapProjections(proj)
+				return
+			}
+			sb.SetScan(&newScanPrivate)
+		}
+
 		// If the alternate index includes the set of needed columns, then
 		// construct a new Scan operator using that index.
 		if isCovering {
-			sb.SetScan(&newScanPrivate)
+			setScan()
 
 			// Project constants from partial index predicate filters, if there
 			// are any.
@@ -520,7 +557,7 @@ func (c *CustomFuncs) GenerateConstrainedScans(
 		// If the index is not covering, scan the needed index columns plus
 		// primary key columns.
 		newScanPrivate.Cols.UnionWith(pkCols)
-		sb.SetScan(&newScanPrivate)
+		setScan()
 
 		// If remaining filter exists, split it into one part that can be pushed
 		// below the IndexJoin, and one part that needs to stay above.
@@ -1191,7 +1228,8 @@ func (c *CustomFuncs) GenerateZigzagJoins(
 	// TODO(mgartner): We should consider primary indexes when it has multiple
 	// columns and only the first is being constrained.
 	var iter scanIndexIter
-	iter.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, filters, rejectPrimaryIndex|rejectInvertedIndexes)
+	reject := rejectPrimaryIndex | rejectInvertedIndexes | rejectInterleavedIndexes
+	iter.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, filters, reject)
 	iter.ForEach(func(leftIndex cat.Index, outerFilters memo.FiltersExpr, leftCols opt.ColSet, _ bool, _ memo.ProjectionsExpr) {
 		leftFixed := c.indexConstrainedCols(leftIndex, scanPrivate.Table, fixedCols)
 		// Short-circuit quickly if the first column in the index is not a fixed
@@ -1201,7 +1239,7 @@ func (c *CustomFuncs) GenerateZigzagJoins(
 		}
 
 		var iter2 scanIndexIter
-		iter2.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, outerFilters, rejectPrimaryIndex|rejectInvertedIndexes)
+		iter2.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, outerFilters, reject)
 		iter2.SetOriginalFilters(filters)
 		iter2.ForEachStartingAfter(leftIndex.Ordinal(), func(rightIndex cat.Index, innerFilters memo.FiltersExpr, rightCols opt.ColSet, _ bool, _ memo.ProjectionsExpr) {
 			// Check if we have zigzag hints.

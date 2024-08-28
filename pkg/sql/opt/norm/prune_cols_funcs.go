@@ -285,7 +285,14 @@ func (c *CustomFuncs) CanPruneMutationFetchCols(
 func (c *CustomFuncs) PruneCols(target memo.RelExpr, neededCols opt.ColSet) memo.RelExpr {
 	switch t := target.(type) {
 	case *memo.ScanExpr:
-		return c.pruneScanCols(t, neededCols)
+		newPrivate := t.ScanPrivate
+		newPrivate.Cols = c.OutputCols(t).Intersection(neededCols)
+		return c.f.ConstructScan(&newPrivate)
+
+	case *memo.InterleavedScanExpr:
+		newPrivate := t.InterleavedScanPrivate
+		newPrivate.Cols = c.OutputCols(t).Intersection(neededCols)
+		return c.f.ConstructInterleavedScan(&newPrivate)
 
 	case *memo.ValuesExpr:
 		return c.pruneValuesCols(t, neededCols)
@@ -357,15 +364,6 @@ func (c *CustomFuncs) filterMutationList(
 		}
 	}
 	return newList
-}
-
-// pruneScanCols constructs a new Scan operator based on the given existing Scan
-// operator, but projecting only the needed columns.
-func (c *CustomFuncs) pruneScanCols(scan *memo.ScanExpr, neededCols opt.ColSet) memo.RelExpr {
-	// Make copy of scan private and update columns.
-	new := scan.ScanPrivate
-	new.Cols = c.OutputCols(scan).Intersection(neededCols)
-	return c.f.ConstructScan(&new)
 }
 
 // pruneWithScanCols constructs a new WithScan operator based on the given
@@ -519,6 +517,14 @@ func (c *CustomFuncs) DerivePruneCols(e memo.RelExpr, disabledRules intsets.Fast
 			break
 		}
 		// All columns can potentially be pruned from the Scan
+		// operators.
+		relProps.Rule.PruneCols = relProps.OutputCols.Copy()
+	case opt.InterleavedScanOp:
+		if disabledRules.Contains(int(opt.PruneInterleavedScanCols)) {
+			// Avoid rule cycles.
+			break
+		}
+		// All columns can potentially be pruned from the InterleavedScan
 		// operators.
 		relProps.Rule.PruneCols = relProps.OutputCols.Copy()
 	case opt.ValuesOp:

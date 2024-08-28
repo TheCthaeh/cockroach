@@ -1200,6 +1200,16 @@ func (ot *optTable) IsMaterializedView() bool {
 	return ot.desc.MaterializedView()
 }
 
+// IsInterleavedTable is part of the cat.Table interface.
+func (ot *optTable) IsInterleavedTable() bool {
+	for i := range ot.indexes {
+		if ot.indexes[i].IsInterleaved() {
+			return true
+		}
+	}
+	return false
+}
+
 // ColumnCount is part of the cat.Table interface.
 func (ot *optTable) ColumnCount() int {
 	return len(ot.columns)
@@ -1451,6 +1461,11 @@ type optIndex struct {
 	// the ordinal of the inverted column created to refer to the key of this
 	// index. It is -1 if this is not an inverted index.
 	invertedColOrd int
+
+	// interleavedColOrds is used if this is an interleaved index; it stores the
+	// ordinal of each index column within the base table that implements the
+	// interleaved index.
+	interleavedColOrds []int
 }
 
 var _ cat.Index = &optIndex{}
@@ -1598,6 +1613,23 @@ func (oi *optIndex) IsUnique() bool {
 // IsInverted is part of the cat.Index interface.
 func (oi *optIndex) IsInverted() bool {
 	return oi.idx.GetType() == descpb.IndexDescriptor_INVERTED
+}
+
+// IsInterleaved is part of the cat.Index interface.
+func (oi *optIndex) IsInterleaved() bool {
+	//return oi.idx.IsInterleaved() TODO
+	return false
+}
+
+// InterleavedPrefixColumnCount is part of the cat.Index interface.
+func (oi *optIndex) InterleavedPrefixColumnCount() int {
+  // TODO
+  return 0
+}
+
+// InterleavedColumnOrdinal is part of the cat.Index interface.
+func (oi *optIndex) InterleavedColumnOrdinal(i int) int {
+	return oi.interleavedColOrds[i]
 }
 
 // GetInvisibility is part of the cat.Index interface.
@@ -2295,6 +2327,11 @@ func (ot *optVirtualTable) IsMaterializedView() bool {
 	return false
 }
 
+// IsInterleavedTable is part of the cat.Table interface.
+func (ot *optVirtualTable) IsInterleavedTable() bool {
+	return false
+}
+
 // ColumnCount is part of the cat.Table interface.
 func (ot *optVirtualTable) ColumnCount() int {
 	return len(ot.columns)
@@ -2504,6 +2541,21 @@ func (oi *optVirtualIndex) IsUnique() bool {
 // IsInverted is part of the cat.Index interface.
 func (oi *optVirtualIndex) IsInverted() bool {
 	return false
+}
+
+// IsInterleaved is part of the cat.Index interface.
+func (oi *optVirtualIndex) IsInterleaved() bool {
+	return false
+}
+
+// InterleavedPrefixColumnCount is part of the cat.Index interface.
+func (oi *optVirtualIndex) InterleavedPrefixColumnCount() int {
+  return 0
+}
+
+// InterleavedColumnOrdinal is part of the cat.Index interface.
+func (oi *optVirtualIndex) InterleavedColumnOrdinal(i int) int {
+	panic(errors.AssertionFailedf("virtual indexes are not interleaved"))
 }
 
 // GetInvisibility is part of the cat.Index interface.

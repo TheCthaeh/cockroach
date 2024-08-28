@@ -540,6 +540,10 @@ func (c *coster) ComputeCost(candidate memo.RelExpr, required *physical.Required
 	case opt.ScanOp:
 		cost = c.computeScanCost(candidate.(*memo.ScanExpr), required)
 
+	case opt.InterleavedScanOp:
+		// InterleavedScan should be replaced by a concrete Scan during exploration.
+		cost = hugeCost
+
 	case opt.SelectOp:
 		cost = c.computeSelectCost(candidate.(*memo.SelectExpr), required)
 

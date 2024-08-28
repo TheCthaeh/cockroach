@@ -36,6 +36,9 @@ import (
 // See the comment for Metadata for more details on identifiers.
 type TableID uint64
 
+// TableList is a list of TableIDs, which may contain duplicates.
+type TableList []TableID
+
 const (
 	tableIDMask = 0xffffffff
 )

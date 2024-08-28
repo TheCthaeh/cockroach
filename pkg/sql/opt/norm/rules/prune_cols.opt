@@ -49,10 +49,29 @@
 (Project (PruneCols $project $needed) $projections $passthrough)
 
 # PruneScanCols discards Scan operator columns that are never used. The needed
-# columns are pushed down into the Scan's opt.ScanOpDef private.
+# columns are pushed down into the Scan's private.
 [PruneScanCols, Normalize]
 (Project
     $input:(Scan)
+    $projections:*
+    $passthrough:* &
+        (CanPruneCols
+            $input
+            $needed:(UnionCols
+                (ProjectionOuterCols $projections)
+                $passthrough
+            )
+        )
+)
+=>
+(Project (PruneCols $input $needed) $projections $passthrough)
+
+# PruneInterleavedScanCols discards InterleavedScan operator columns that are
+# never used. The needed columns are pushed down into the InterleavedScan's
+# private.
+[PruneInterleavedScanCols, Normalize]
+(Project
+    $input:(InterleavedScan)
     $projections:*
     $passthrough:* &
         (CanPruneCols

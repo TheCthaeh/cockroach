@@ -51,6 +51,10 @@ type Table interface {
 	// that they cannot be mutated.
 	IsMaterializedView() bool
 
+	// IsInterleavedTable returns true if this table has at least one interleaved
+	// index.
+	IsInterleavedTable() bool
+
 	// ColumnCount returns the number of columns in the table. This includes
 	// public columns, write-only columns, etc.
 	ColumnCount() int

@@ -44,6 +44,10 @@ const (
 	// rejectNonPartialIndexes excludes any non-partial indexes during
 	// iteration.
 	rejectNonPartialIndexes
+
+	// rejectInterleavedIndexes excludes any interleaved indexes during iteration.
+	// NOTE: partial indexes may be interleaved, though not inverted indexes.
+	rejectInterleavedIndexes
 )
 
 // scanIndexIter is a helper struct that facilitates iteration over the indexes

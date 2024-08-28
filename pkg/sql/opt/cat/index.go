@@ -56,6 +56,19 @@ type Index interface {
 	// IsInverted returns true if this is an inverted index.
 	IsInverted() bool
 
+	// IsInterleaved returns true if this is an interleaved index.
+	IsInterleaved() bool
+
+	// InterleavedPrefixColumnCount returns the size of the index key prefix that
+	// determines the location of an indexed row. It is zero for non-interleaved
+	// indexes.
+	InterleavedPrefixColumnCount() int
+
+	// InterleavedColumnOrdinal returns the ordinal of the ith index column in
+	// the underlying table that implements the interleaved index. Can only be
+	// called if the index is an interleaved index.
+	InterleavedColumnOrdinal(i int) int
+
 	// GetInvisibility returns index invisibility.
 	GetInvisibility() float64
 

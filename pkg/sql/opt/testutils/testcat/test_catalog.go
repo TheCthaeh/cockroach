@@ -820,6 +820,16 @@ func (tt *Table) IsMaterializedView() bool {
 	return false
 }
 
+// IsInterleavedTable is part of the cat.Table interface.
+func (tt *Table) IsInterleavedTable() bool {
+  for i := range tt.Indexes {
+    if tt.Indexes[i].IsInterleaved() {
+      return true
+    }
+  }
+  return false
+}
+
 // ColumnCount is part of the cat.Table interface.
 func (tt *Table) ColumnCount() int {
 	return len(tt.Columns)
@@ -1047,6 +1057,16 @@ type Index struct {
 	// Inverted is true when this index is an inverted index.
 	Inverted bool
 
+	// Interleaved is true when this index is an interleaved index.
+	Interleaved bool
+  
+  // InterleavedPrefixColCount is the number of columns 
+  InterleavedPrefixColCount int
+
+	// InterleavedColOrds is a map from index columns to ordinals in the base
+  // table. Only populated for an interleaved index.
+	InterleavedColOrds []int
+
 	// Invisibility specifies the invisibility of an index and can be any float64
 	// between [0.0, 1.0]. An index with invisibility 0.0 means that the index is
 	// visible. An index with invisibility 1.0 means that the index is fully not
@@ -1116,6 +1136,20 @@ func (ti *Index) IsUnique() bool {
 // IsInverted is part of the cat.Index interface.
 func (ti *Index) IsInverted() bool {
 	return ti.Inverted
+}
+
+// IsInterleaved is part of the cat.Index interface.
+func (ti *Index) IsInterleaved() bool {
+	return ti.Interleaved
+}
+
+func (ti *Index) InterleavedPrefixColumnCount() int {
+  return ti.InterleavedPrefixColCount
+}
+
+// InterleavedColumnOrdinal is part of the cat.Index interface.
+func (ti *Index) InterleavedColumnOrdinal(i int) int {
+	return ti.InterleavedColOrds[i]
 }
 
 // GetInvisibility is part of the cat.Index interface.

@@ -47,7 +47,8 @@ func (c *CustomFuncs) GenerateIndexScans(
 	// Iterate over all non-inverted and non-partial secondary indexes.
 	var pkCols opt.ColSet
 	var iter scanIndexIter
-	iter.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, nil /* filters */, rejectPrimaryIndex|rejectInvertedIndexes)
+	reject := rejectPrimaryIndex | rejectInvertedIndexes | rejectInterleavedIndexes
+	iter.Init(c.e.evalCtx, c.e, c.e.mem, &c.im, scanPrivate, nil /* filters */, reject)
 	iter.ForEach(func(index cat.Index, filters memo.FiltersExpr, indexCols opt.ColSet, isCovering bool, constProj memo.ProjectionsExpr) {
 		// The iterator only produces pseudo-partial indexes (the predicate is
 		// true) because no filters are passed to iter.Init to imply a partial
@@ -169,6 +170,68 @@ func (c *CustomFuncs) IsCardinalityAboveMaxForLocalityOptimizedScan(relExpr memo
 	// distribution.
 	maxRows := rowinfra.KeyLimit(relExpr.Relational().Cardinality.Max)
 	return maxRows > rowinfra.ProductionKVBatchSize
+}
+
+func (c *CustomFuncs) GeneratedInterleavedPrimaryIndexScan(
+	grp memo.RelExpr, required *physical.Required, private *memo.InterleavedScanPrivate,
+) {
+	md := c.e.mem.Metadata()
+	tab := md.Table(private.Table)
+	if len(private.BaseTables) != tab.IndexCount() {
+		panic(errors.AssertionFailedf("expected a base table for each index"))
+	}
+	// Create a ScanPrivate with all fields set apart from the columns, which will
+	// have to be remapped if the primary index is interleaved.
+	baseTableID := private.BaseTables[0]
+	scanPrivate := memo.ScanPrivate{
+		Table:   baseTableID,
+		Index:   cat.PrimaryIndex,
+		Flags:   private.Flags,
+		Locking: private.Locking,
+	}
+	if baseTableID == private.Table {
+		// Although the table contains interleaved indexes, the primary index is not
+		// interleaved, and is stored normally.
+		scanPrivate.Cols = private.Cols
+		c.e.mem.AddScanToGroup(&memo.ScanExpr{ScanPrivate: scanPrivate}, grp)
+		return
+	}
+	cols, proj := c.remapInterleavedColumns(private.Cols, private.Table, baseTableID, tab.Index(0))
+	scanPrivate.Cols = cols
+	baseTableScan := c.e.f.ConstructScan(&scanPrivate)
+	c.e.mem.AddProjectToGroup(&memo.ProjectExpr{Input: baseTableScan, Projections: proj}, grp)
+}
+
+// remapInterleavedColumns returns the given set of columns remapped to refer to
+// the base table of an interleaved index. It also returns a set of projections
+// that can be used to reverse the mapping.
+func (c *CustomFuncs) remapInterleavedColumns(
+	cols opt.ColSet, interleavedTab, baseTab opt.TableID, idx cat.Index,
+) (opt.ColSet, memo.ProjectionsExpr) {
+	var remappedCols opt.ColSet
+	projections := make(memo.ProjectionsExpr, 0, cols.Len())
+	for col, ok := cols.Next(0); ok; col, ok = cols.Next(col + 1) {
+		// Map from interleaved scan columns to base table columns.
+		ord := interleavedTab.ColumnOrdinal(col)
+		baseTabOrd := idx.InterleavedColumnOrdinal(ord)
+		baseTabCol := baseTab.ColumnID(baseTabOrd)
+		remappedCols.Add(baseTabCol)
+
+		// Create projections that reverse the mapping back to the original IDs.
+		baseTabVar := c.e.f.ConstructVariable(baseTabCol)
+		projections = append(projections, c.e.f.ConstructProjectionsItem(baseTabVar, col))
+	}
+	return remappedCols, projections
+}
+
+// remapInterleavedConstraint remaps the columns within the given constraint to
+// refer to the base table of an interleaved index. Additionally, it updates the
+// constraint with the table and index ID columns of the base table, which
+// follow the shared-prefix columns of the interleaved index.
+func (c *CustomFuncs) remapInterleavedConstraint(
+	cons *constraint.Constraint, interleavedTab, baseTab opt.TableID, idx cat.Index,
+) *constraint.Constraint {
+
 }
 
 // GenerateLocalityOptimizedScan generates a locality optimized scan if possible

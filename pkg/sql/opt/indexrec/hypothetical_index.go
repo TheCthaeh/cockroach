@@ -116,6 +116,24 @@ func (hi *hypotheticalIndex) IsInverted() bool {
 	return hi.inverted
 }
 
+// IsInterleaved is part of the cat.Index interface.
+func (hi *hypotheticalIndex) IsInterleaved() bool {
+	// Recommendations for interleaved indexes are not yet supported.
+	return false
+}
+
+// InterleavedPrefixColumnCount is part of the cat.Index interface.
+func (hi *hypotheticalIndex) InterleavedPrefixColumnCount() int {
+	// Recommendations for interleaved indexes are not yet supported.
+	return 0
+}
+
+// InterleavedColumnOrdinal is part of the cat.Index interface.
+func (hi *hypotheticalIndex) InterleavedColumnOrdinal(i int) int {
+	// Recommendations for interleaved indexes are not yet supported.
+	return 0
+}
+
 // GetInvisibility is part of the cat.Index interface.
 func (hi *hypotheticalIndex) GetInvisibility() float64 {
 	// A hypotheticalIndex should not be invisible because there is no motivation

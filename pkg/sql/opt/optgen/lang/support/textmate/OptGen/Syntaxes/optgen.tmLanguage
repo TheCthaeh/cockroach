@@ -208,6 +208,8 @@
                         ScalarList |
                         Scan |
                         ScanPrivate |
+                        InterleavedScan |
+                        InterleavedScanPrivate |
                         VirtualScan |
                         VirtualScanPrivate |
                         Values |

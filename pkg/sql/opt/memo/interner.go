@@ -499,6 +499,12 @@ func (h *hasher) HashTableID(val opt.TableID) {
 	h.HashUint64(uint64(val))
 }
 
+func (h *hasher) HashTableList(val opt.TableList) {
+	for _, id := range val {
+		h.HashTableID(id)
+	}
+}
+
 func (h *hasher) HashSequenceID(val opt.SequenceID) {
 	h.HashUint64(uint64(val))
 }
@@ -983,6 +989,18 @@ func (h *hasher) IsSchemaIDEqual(l, r opt.SchemaID) bool {
 
 func (h *hasher) IsTableIDEqual(l, r opt.TableID) bool {
 	return l == r
+}
+
+func (h *hasher) IsTableListEqual(l, r opt.TableList) bool {
+	if len(l) != len(r) {
+		return false
+	}
+	for i := range l {
+		if l[i] != r[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (h *hasher) IsSequenceIDEqual(l, r opt.SequenceID) bool {

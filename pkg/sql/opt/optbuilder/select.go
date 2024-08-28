@@ -808,7 +808,42 @@ func (b *Builder) buildScan(
 	b.addComputedColsForTable(tabMeta, virtualMutationColOrds)
 	tabMeta.CacheIndexPartitionLocalities(b.ctx, b.evalCtx)
 
-	outScope.expr = b.factory.ConstructScan(&private)
+	if tab.IsInterleavedTable() {
+		indexBaseTables := make(opt.TableList, tab.IndexCount())
+		for i := 0; i < tab.IndexCount(); i++ {
+			idx := tab.Index(i)
+      if !idx.IsInterleaved() {
+        indexBaseTables[i] = private.Table
+        continue
+      }
+			baseTableID := 0
+			var flags cat.Flags
+			if b.insideViewDef || b.insideFuncDef {
+				// Avoid taking table leases when we're creating a view or a function.
+				flags.AvoidDescriptorCaches = true
+			}
+			ds, _, err := b.catalog.ResolveDataSourceByID(b.ctx, flags, cat.StableID(baseTableID))
+			if err != nil {
+				panic(errors.AssertionFailedf("no base table for interleaved index %s", idx.Name()))
+			}
+			baseTab, ok := ds.(cat.Table)
+			if !ok {
+				panic(errors.AssertionFailedf(
+					"base table for interleaved index %sis not a table", idx.Name()))
+			}
+			tn := tree.NewUnqualifiedTableName(baseTab.Name())
+			indexBaseTables[i] = b.factory.Metadata().AddTable(baseTab, tn)
+		}
+		outScope.expr = b.factory.ConstructInterleavedScan(&memo.InterleavedScanPrivate{
+			Table:      private.Table,
+			BaseTables: indexBaseTables,
+			Cols:       private.Cols,
+			Flags:      private.Flags,
+			Locking:    private.Locking,
+		})
+	} else {
+		outScope.expr = b.factory.ConstructScan(&private)
+	}
 
 	// Add the partial indexes after constructing the scan so we can use the
 	// logical properties of the scan to fully normalize the index predicates.

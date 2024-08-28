@@ -106,6 +106,42 @@ define ScanPrivate {
     ExactPrefix int
 }
 
+[Relational]
+define InterleavedScan {
+    _ InterleavedScanPrivate
+}
+
+[Private]
+define InterleavedScanPrivate {
+    # Table identifies the interleaved table to scan. It is an id that can be
+    # passed to the Metadata.Table method in order to fetch cat.Table metadata.
+    Table TableID
+
+    # BaseTables identifies the base table for each index in the interleaved
+    # table.
+    BaseTables TableList
+
+    # Cols specifies the set of columns that the scan operator projects. This
+    # may be a subset of the columns that the table contains.
+    Cols ColSet
+
+    # Flags modify how the table is scanned, such as which index is used to scan.
+    Flags ScanFlags
+
+    # Locking represents the row-level locking mode of the Scan. Most scans
+    # leave this unset (Strength = ForNone), which indicates that no row-level
+    # locking will be performed while scanning the table. Stronger locking modes
+    # are used by SELECT .. FOR [KEY] UPDATE/SHARE statements and by the initial
+    # row retrieval of DELETE and UPDATE statements.
+    #
+    # The row-level locking mode also dictates the policy used by the Scan when
+    # handling conflicting locks held by other active transactions. Most scans
+    # leave the policy set to its default (WaitPolicy = Block), but different
+    # wait policies are used by SELECT .. FOR UPDATE/SHARE SKIP LOCKED/NOWAIT
+    # statements to react differently to conflicting locks.
+    Locking Locking
+}
+
 # PlaceholderScan is a special variant of Scan. It scans exactly one span of a
 # non-inverted index, and the span has the same start and end key. The values
 # for the span key are child scalar operators which are either constants or
