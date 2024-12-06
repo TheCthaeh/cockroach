@@ -65,11 +65,9 @@ go_test(
     ],
     embed = [":vecstore"],
     deps = [
-        "//pkg/sql/randgen",
-        "//pkg/sql/sem/tree",
-        "//pkg/sql/types",
         "//pkg/sql/vecindex/internal",
         "//pkg/sql/vecindex/quantize",
+        "//pkg/sql/vecindex/testutils",
         "//pkg/util/leaktest",
         "//pkg/util/log",
         "//pkg/util/num32",

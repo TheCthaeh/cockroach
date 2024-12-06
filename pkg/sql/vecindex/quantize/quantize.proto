@@ -12,6 +12,17 @@ import "gogoproto/gogo.proto";
 
 option (gogoproto.goproto_getters_all) = false;
 
+enum QuantizeMethod {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // NotQuantized is a quantization method that does not modify the vectors.
+  MethodNotQuantized = 0;
+
+  // RaBitQ is a quantization method that uses the RaBitQ algorithm to
+  // quantize vectors.
+  MethodRaBitQ = 1;
+}
+
 // RaBitQCodeSet is a set of RaBitQ quantization codes. Each code represents a
 // quantized vector.
 message RaBitQCodeSet {

@@ -53,15 +53,11 @@ type Quantizer interface {
 	// Quantize quantizes a set of input vectors and returns their compressed
 	// form as a quantized vector set. Input vectors should already have been
 	// randomized.
-	//
-	// NOTE: The caller must ensure that a Workspace is attached to the context.
 	Quantize(ctx context.Context, vectors *vector.Set) QuantizedVectorSet
 
 	// QuantizeInSet quantizes a set of input vectors and adds their compressed
 	// form to an existing quantized vector set. Input vectors should already
 	// have been randomized.
-	//
-	// NOTE: The caller must ensure that a Workspace is attached to the context.
 	QuantizeInSet(ctx context.Context, quantizedSet QuantizedVectorSet, vectors *vector.Set)
 
 	// EstimateSquaredDistances returns the estimated squared distances of the
@@ -72,8 +68,6 @@ type Quantizer interface {
 	// "errorBounds" slices with length equal to the number of quantized vectors
 	// in "quantizedSet". EstimateSquaredDistances will update the slices with
 	// distances and distance error bounds.
-	//
-	// NOTE: The caller must ensure that a Workspace is attached to the context.
 	EstimateSquaredDistances(
 		ctx context.Context,
 		quantizedSet QuantizedVectorSet,

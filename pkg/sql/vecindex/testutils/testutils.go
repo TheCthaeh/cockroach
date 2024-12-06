@@ -7,6 +7,7 @@ package testutils
 
 import (
 	"encoding/gob"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -46,4 +47,17 @@ func LoadFeatures(t testing.TB, count int) vector.Set {
 	require.NoError(t, err)
 
 	return vector.MakeSetFromRawData(data[:count*512], 512)
+}
+
+// RandomVectorSet generates a vector set with a random number of randomly
+// generated vectors.
+func RandomVectorSet(rnd *rand.Rand, dims int) *vector.Set {
+	count := rnd.Intn(128)
+
+	set := vector.MakeSet(dims)
+	set.AddUndefined(count)
+	for i := range count {
+		copy(set.At(i), vector.Random(rnd, dims))
+	}
+	return &set
 }

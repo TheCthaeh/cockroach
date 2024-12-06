@@ -12,11 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cockroachdb/cockroach/pkg/sql/randgen"
-	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
-	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"github.com/cockroachdb/cockroach/pkg/sql/vecindex/internal"
 	"github.com/cockroachdb/cockroach/pkg/sql/vecindex/quantize"
+	"github.com/cockroachdb/cockroach/pkg/sql/vecindex/testutils"
 	"github.com/cockroachdb/cockroach/pkg/util/leaktest"
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/cockroach/pkg/util/randutil"
@@ -32,15 +30,7 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 	t.Logf("random seed: %v", seed)
 
 	dims := rnd.Intn(100) + 1
-	count := rnd.Intn(128)
-
-	set := vector.MakeSet(dims)
-	set.AddUndefined(count)
-	for i := range count {
-		vecDatum := randgen.RandDatum(rnd, types.MakePGVector(int32(dims)), false /* nullOk */)
-		copy(set.At(i), vecDatum.(*tree.DPGVector).T)
-	}
-	testEncodeDecodeRoundTripImpl(t, rnd, &set)
+	testEncodeDecodeRoundTripImpl(t, rnd, testutils.RandomVectorSet(rnd, dims))
 }
 
 func testEncodeDecodeRoundTripImpl(t *testing.T, rnd *rand.Rand, set *vector.Set) {

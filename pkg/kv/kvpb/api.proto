@@ -17,6 +17,7 @@ import "roachpb/span_config.proto";
 import "rpc/rpcpb/rpc.proto";
 import "settings/encoding.proto";
 import "sql/catalog/fetchpb/index_fetch.proto";
+import "sql/vecindex/quantize/quantize.proto";
 import "storage/enginepb/mvcc.proto";
 import "storage/enginepb/mvcc3.proto";
 import "util/hlc/timestamp.proto";
@@ -811,6 +812,44 @@ message ReverseScanResponse {
   ColBatches col_batches = 5 [(gogoproto.nullable) = false];
 }
 
+// A VectorIndexScanRequest is the argument to the VectorIndexScan() method.
+// It specifies the start and end keys for a scan of a vector index partition,
+// as well as the information needed to calculate distances from a query vector.
+message VectorIndexScanRequest {
+  RequestHeader header = 1 [(gogoproto.nullable) = false, (gogoproto.embed) = true];
+  // QuantizeMethod is the quantization algorithm with which the target vector
+  // index partition is encoded.
+  sql.vecindex.quantize.QuantizeMethod quantize_method = 2;
+  // Dims is the number of dimensions in each vector.
+  uint64 dims = 3;
+  // Seed is the seed used to quantize vectors in the vector index. It may be
+  // left unset if the quantization method is MethodNotQuantized.
+  int64 seed = 4;
+  // QueryVector is the vector to search for in the vector index.
+  repeated float query_vector = 5;
+}
+
+// A VectorIndexScanResponse is the return value from the VectorIndexScan()
+// method.
+message VectorIndexScanResponse {
+  ResponseHeader header = 1 [(gogoproto.nullable) = false, (gogoproto.embed) = true];
+  // ChildPartitionKeys is the list of child partitions within the searched
+  // partition. It is only set if the searched partition is a root or branch
+  // partition.
+  repeated uint64 child_partition_keys = 2;
+  // ChildPrimaryKeys is the list of primary keys of the full vectors in the
+  // searched partition. It is only set if the searched partition is a leaf
+  // partition.
+  repeated bytes child_primary_keys = 3 [(gogoproto.casttype) = "github.com/cockroachdb/cockroach/pkg/roachpb.Key"];
+  // SquaredDistances is the list of estimated squared distance between the
+  // vectors within the searched partition and the query vector.
+  repeated float squared_distances = 4;
+	// ErrorBounds is a list of probabilistic bounds on the error of the distance
+	// estimates.
+  repeated float error_bounds = 5;
+  // Count is the number of vectors in the searched partition.
+  uint64 count = 6;
+}
 
 enum ChecksumMode {
     // CHECK_VIA_QUEUE is set for requests made from the consistency queue. In
@@ -2554,6 +2593,7 @@ message RequestUnion {
     ProbeRequest probe = 54;
     IsSpanEmptyRequest is_span_empty = 56;
     LinkExternalSSTableRequest link_external_sstable = 57;
+    VectorIndexScanRequest vector_scan = 58;
   }
   reserved 8, 15, 23, 25, 27, 31, 34, 52;
 }
@@ -2610,6 +2650,7 @@ message ResponseUnion {
     ProbeResponse probe = 54;
     IsSpanEmptyResponse is_span_empty = 56;
     LinkExternalSSTableResponse link_external_sstable = 57;
+    VectorIndexScanResponse vector_scan = 58;
   }
   reserved 8, 15, 23, 25, 27, 28, 31, 34, 52;
 }

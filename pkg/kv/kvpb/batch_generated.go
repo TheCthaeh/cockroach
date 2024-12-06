@@ -110,6 +110,8 @@ func (ru RequestUnion) GetInner() Request {
 		return t.IsSpanEmpty
 	case *RequestUnion_LinkExternalSstable:
 		return t.LinkExternalSstable
+	case *RequestUnion_VectorScan:
+		return t.VectorScan
 	default:
 		return nil
 	}
@@ -214,6 +216,8 @@ func (ru ResponseUnion) GetInner() Response {
 		return t.IsSpanEmpty
 	case *ResponseUnion_LinkExternalSstable:
 		return t.LinkExternalSstable
+	case *ResponseUnion_VectorScan:
+		return t.VectorScan
 	default:
 		return nil
 	}
@@ -322,6 +326,8 @@ func (ru *RequestUnion) MustSetInner(r Request) {
 		union = &RequestUnion_IsSpanEmpty{t}
 	case *LinkExternalSSTableRequest:
 		union = &RequestUnion_LinkExternalSstable{t}
+	case *VectorIndexScanRequest:
+		union = &RequestUnion_VectorScan{t}
 	default:
 		panic(fmt.Sprintf("unsupported type %T for %T", r, ru))
 	}
@@ -429,13 +435,15 @@ func (ru *ResponseUnion) MustSetInner(r Response) {
 		union = &ResponseUnion_IsSpanEmpty{t}
 	case *LinkExternalSSTableResponse:
 		union = &ResponseUnion_LinkExternalSstable{t}
+	case *VectorIndexScanResponse:
+		union = &ResponseUnion_VectorScan{t}
 	default:
 		panic(fmt.Sprintf("unsupported type %T for %T", r, ru))
 	}
 	ru.Value = union
 }
 
-type reqCounts [49]int32
+type reqCounts [50]int32
 
 // getReqCounts returns the number of times each
 // request type appears in the batch.
@@ -541,6 +549,8 @@ func (ba *BatchRequest) getReqCounts() reqCounts {
 			counts[47]++
 		case *RequestUnion_LinkExternalSstable:
 			counts[48]++
+		case *RequestUnion_VectorScan:
+			counts[49]++
 		default:
 			panic(fmt.Sprintf("unsupported request: %+v", ru))
 		}
@@ -598,6 +608,7 @@ var requestNames = []string{
 	"Probe",
 	"IsSpanEmpty",
 	"LinkExternalSstable",
+	"VectorScan",
 }
 
 // Summary prints a short summary of the requests in a batch.
@@ -829,6 +840,10 @@ type linkExternalSSTableResponseAlloc struct {
 	union ResponseUnion_LinkExternalSstable
 	resp  LinkExternalSSTableResponse
 }
+type vectorIndexScanResponseAlloc struct {
+	union ResponseUnion_VectorScan
+	resp  VectorIndexScanResponse
+}
 
 // CreateReply creates replies for each of the contained requests, wrapped in a
 // BatchResponse. The response objects are batch allocated to minimize
@@ -888,6 +903,7 @@ func (ba *BatchRequest) CreateReply() *BatchResponse {
 	var buf46 []probeResponseAlloc
 	var buf47 []isSpanEmptyResponseAlloc
 	var buf48 []linkExternalSSTableResponseAlloc
+	var buf49 []vectorIndexScanResponseAlloc
 
 	for i, r := range ba.Requests {
 		switch r.GetValue().(type) {
@@ -1234,6 +1250,13 @@ func (ba *BatchRequest) CreateReply() *BatchResponse {
 			buf48[0].union.LinkExternalSstable = &buf48[0].resp
 			br.Responses[i].Value = &buf48[0].union
 			buf48 = buf48[1:]
+		case *RequestUnion_VectorScan:
+			if buf49 == nil {
+				buf49 = make([]vectorIndexScanResponseAlloc, counts[49])
+			}
+			buf49[0].union.VectorScan = &buf49[0].resp
+			br.Responses[i].Value = &buf49[0].union
+			buf49 = buf49[1:]
 		default:
 			panic(fmt.Sprintf("unsupported request: %+v", r))
 		}
@@ -1342,6 +1365,8 @@ func CreateRequest(method Method) Request {
 		return &IsSpanEmptyRequest{}
 	case LinkExternalSSTable:
 		return &LinkExternalSSTableRequest{}
+	case VectorIndexScan:
+		return &VectorIndexScanRequest{}
 	default:
 		panic(fmt.Sprintf("unsupported method: %+v", method))
 	}

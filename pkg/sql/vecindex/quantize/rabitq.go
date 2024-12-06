@@ -153,7 +153,7 @@ func (q *raBitQuantizer) EstimateSquaredDistances(
 	raBitSet := quantizedSet.(*RaBitQuantizedVectorSet)
 
 	// Allocate temp space for calculations.
-	workspace := internal.WorkspaceFromContext(ctx)
+	workspace := internal.EnsureWorkspaceFromContext(ctx)
 	tempCodes := allocCodes(workspace, 4, raBitSet.Codes.Width)
 	defer freeCodes(workspace, tempCodes)
 	tempVectors := workspace.AllocVectorSet(1, q.dims)
@@ -294,7 +294,7 @@ func (q *raBitQuantizer) quantizeHelper(
 	qs.AddUndefined(count)
 
 	// Allocate temp space for vector calculations.
-	workspace := internal.WorkspaceFromContext(ctx)
+	workspace := internal.EnsureWorkspaceFromContext(ctx)
 	tempVectors := workspace.AllocVectorSet(qs.GetCount(), q.dims)
 	defer workspace.FreeVectorSet(tempVectors)
 

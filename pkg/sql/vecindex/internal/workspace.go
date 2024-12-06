@@ -32,6 +32,16 @@ func WorkspaceFromContext(ctx context.Context) *Workspace {
 	return workspace.(*Workspace)
 }
 
+// EnsureWorkspaceFromContext extracts a workspace from the given context, or
+// constructs a new one if there is none.
+func EnsureWorkspaceFromContext(ctx context.Context) *Workspace {
+	workspace := ctx.Value(workspaceCtxValue)
+	if workspace == nil {
+		return &Workspace{}
+	}
+	return workspace.(*Workspace)
+}
+
 // Workspace provides temporary per-thread memory for routines that only need to
 // use it within the context of their current stack frame. Allocated memory is
 // stack-allocated and must be explicitly freed in the same order it was

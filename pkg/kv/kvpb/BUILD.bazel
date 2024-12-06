@@ -105,6 +105,7 @@ proto_library(
         "//pkg/rpc/rpcpb:rpcpb_proto",
         "//pkg/settings:settings_proto",
         "//pkg/sql/catalog/fetchpb:fetchpb_proto",
+        "//pkg/sql/vecindex/quantize:quantize_proto",  # keep
         "//pkg/storage/enginepb:enginepb_proto",
         "//pkg/util/hlc:hlc_proto",
         "//pkg/util/tracing/tracingpb:tracingpb_proto",
@@ -128,6 +129,7 @@ go_proto_library(
         "//pkg/rpc/rpcpb",
         "//pkg/settings",
         "//pkg/sql/catalog/fetchpb",
+        "//pkg/sql/vecindex/quantize",
         "//pkg/storage/enginepb",
         "//pkg/util/hlc",
         "//pkg/util/tracing/tracingpb",
